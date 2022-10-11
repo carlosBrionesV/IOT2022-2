@@ -3,7 +3,7 @@
 Este es un template básico con una estructura de tarea definida y que busca ayudarlos a organizarla bien
 
 ## Estructura del Template
-
+```
 Proyecto  
 |  
 |--- Raspberry-|--- Server TCP   
@@ -11,5 +11,5 @@ Proyecto
 |  
 |--- ESP32-|---Cliente TCP  
            |---Cliente UDP  
-
+```
 # BORRE ESTO Y HAGA UNA DESCRIPCIÓN DE SU TAREA AQUÍ
