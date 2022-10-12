@@ -1,17 +1,29 @@
 import socket
 
-UDP_IP = "192.168.4.1"# "localhost" 
-UDP_PORT = 5010
+UDP_IP = "192.168.4.1" # "localhost" 
+UDP_PORT = 5010 # Port to listen on (non-privileged ports are > 1023)
 
-sUDP = socket.socket(socket.AF_INET, # Internet
-                     socket.SOCK_DGRAM) # UDP
-sUDP.bind((UDP_IP, UDP_PORT))
+def createUDPServer(IP: str, PORT: int):
+    sock = socket.socket(socket.AF_INET, #internet
+                      socket.SOCK_DGRAM) #UDP
+    sock.bind((IP, PORT))
+    return sock
 
+def receiveUDPMessage(sock : socket.socket): return sock.recvfrom(1024)
+def sendUDPMessage(sock : socket.socket, msg: str, addr: tuple): sock.sendto(msg.encode(), addr)
 
-print(f"Listening for UDP packets in {UDP_IP}:{UDP_PORT}")
-while True:
-
+def main():
+    s = createUDPServer(UDP_IP, UDP_PORT)
+    print(f"Listening (UDP) on {UDP_IP}:{UDP_PORT}")
     while True:
-        payload, client_address = sUDP.recvfrom(1)
-        print("Echoing data back to " + str(client_address) + ": " + payload)
-        sent = sUDP.sendto(payload, client_address)
+        print("Waiting for message..", end=" ")
+        msg, addr = receiveUDPMessage(s)
+        print(f".OK\nReceived: {msg.decode()} from {addr}")
+        if msg.decode() == "quit": break
+        msg = ("OK " + msg.decode()).encode()
+        print(f"Sending message ({msg}) to {addr} ..", end=" ")
+        sendUDPMessage(s, msg.decode(), addr)
+        print(".OK\n")
+    print("Server closed")
+
+if __name__ == "__main__": main()
