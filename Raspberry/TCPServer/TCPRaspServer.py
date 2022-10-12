@@ -1,26 +1,35 @@
 import socket
 
-# Standard loopback interface address (localhost)
-HOST = "192.168.4.1" # "localhost"
-PORT = 5000  # Port to listen on (non-privileged ports are > 1023)
+TCP_IP = "192.168.4.1" # "localhost"
+TCP_PORT = 5000  # Port to listen on (non-privileged ports are > 1023)
 
-s = socket.socket(socket.AF_INET, #internet
-                  socket.SOCK_STREAM) #TCP
-s.bind((HOST, PORT))
-s.listen(5)
-print(f"Listening on {HOST}:{PORT}")
-while True:
-    conn, addr = s.accept()
-    print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
+def createTCPServer(IP: str, PORT: int):
+    sock = socket.socket(socket.AF_INET, #internet
+                      socket.SOCK_STREAM) #TCP
+    sock.bind((IP, PORT))
+    sock.listen(5)
+    return sock
+
+def acceptTCPConnection(sock: socket.socket): return sock.accept()
+def sendTCPMessage(conn: socket.socket, msg: str): conn.send(msg.encode())
+def receiveTCPMessage(conn: socket.socket): return conn.recv(1024).decode()
+def closeTCPConnection(conn: socket.socket): conn.close()
+
+def main():
+    s = createTCPServer(TCP_IP, TCP_PORT)
+    print(f"Listening (TCP) on {TCP_IP}:{TCP_PORT}")
+    conn, addr = acceptTCPConnection(s)
+    print(f"Connection from {addr}")
     while True:
-        try:
-            data = conn.recv(1024)
-            if data == b'':
-                break
-        except ConnectionResetError:
-            break
-        print(f"Recibido {data}")
-        conn.send(data)
+        print("Waiting for message..", end=" ")
+        msg = receiveTCPMessage(conn)
+        print(f".OK\nReceived: {msg}")
+        if msg == "quit": break
+        msg = "OK " + msg
+        print(f"Sending message ({msg}) to {addr} ..", end=" ")
+        sendTCPMessage(conn, msg)
+        print(".OK\n")
+    closeTCPConnection(conn)
+    print("Connection closed")
 
-    conn.close()
-    print('Desconectado')
+if __name__ == "__main__": main()
