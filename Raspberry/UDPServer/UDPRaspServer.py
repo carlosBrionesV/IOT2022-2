@@ -15,15 +15,21 @@ def sendUDPMessage(sock : socket.socket, msg: str, addr: tuple): sock.sendto(msg
 def main():
     s = createUDPServer(UDP_IP, UDP_PORT)
     print(f"Listening (UDP) on {UDP_IP}:{UDP_PORT}")
-    while True:
-        print("Waiting for message..", end=" ")
-        msg, addr = receiveUDPMessage(s)
-        print(f".OK\nReceived: {msg.decode()} from {addr}")
-        if msg.decode() == "quit": break
-        msg = ("OK " + msg.decode()).encode()
+    try:
+        while True:
+            print("Waiting for message..", end=" ")
+            msg, addr = receiveUDPMessage(s)
+            print(f".OK\nReceived: {msg} from {addr}")
+            print(f"Sending message ({msg}) to {addr} ..", end=" ")
+            sendUDPMessage(s, msg, addr)
+            print(".OK\n")
+            if msg.decode() == "quit": break
+    except KeyboardInterrupt:
+        msg = "quit".encode()
         print(f"Sending message ({msg}) to {addr} ..", end=" ")
-        sendUDPMessage(s, msg.decode(), addr)
+        sendUDPMessage(s, msg, addr)
         print(".OK\n")
+    s.close()
     print("Server closed")
 
 if __name__ == "__main__": main()
