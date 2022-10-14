@@ -11,8 +11,8 @@ def createTCPServer(IP: str, PORT: int):
     return sock
 
 def acceptTCPConnection(sock: socket.socket): return sock.accept()
-def sendTCPMessage(conn: socket.socket, msg: str): conn.send(msg.encode())
-def receiveTCPMessage(conn: socket.socket): return conn.recv(1024).decode()
+def sendTCPMessage(conn: socket.socket, msg: str): conn.send(msg)
+def receiveTCPMessage(conn: socket.socket): return conn.recv(1024)
 def closeTCPConnection(conn: socket.socket): conn.close()
 
 def main():
@@ -20,15 +20,21 @@ def main():
     print(f"Listening (TCP) on {TCP_IP}:{TCP_PORT}")
     conn, addr = acceptTCPConnection(s)
     print(f"Connection from {addr}")
-    while True:
-        print("Waiting for message..", end=" ")
-        msg = receiveTCPMessage(conn)
-        print(f".OK\nReceived: {msg}")
-        if msg == "quit": break
-        msg = "OK " + msg
+    try:
+        while True:
+            print("Waiting for message..", end=" ")
+            msg = receiveTCPMessage(conn)
+            print(f".OK\nReceived: {msg}")
+            print(f"Sending message ({msg}) ..", end=" ")
+            sendTCPMessage(conn, msg)
+            print(".OK\n")
+            if msg.decode() == "quit": break
+    except KeyboardInterrupt:
+        msg = "quit".encode()
         print(f"Sending message ({msg}) to {addr} ..", end=" ")
         sendTCPMessage(conn, msg)
         print(".OK\n")
+    
     closeTCPConnection(conn)
     print("Connection closed")
 
