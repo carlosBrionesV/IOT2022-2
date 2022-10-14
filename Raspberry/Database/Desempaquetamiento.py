@@ -9,7 +9,7 @@ Usamos struct para pasar de un array de bytes a una lista de numeros/strings. (h
 (La ESP32 manda los bytes en formato little-endian, por lo que los format strings deben empezar con <)
 
 -dataSave: Guarda los datos en la BDD
--response: genera un OK para mandar de vuelta cuando se recibe un mensaje, con posibilidad de pedir que se cambie el status/protocol
+-response: genera un OK para mandar de vuelta cuando se recibe un mensaje, con posibilidad de pedir que se cambie el tLayer/protocol
 -protUnpack: desempaca un byte array con los datos de un mensaje (sin el header)
 -headerDict: Transforma el byte array de header (los primeros 10 bytes de cada mensaje) en un diccionario con la info del header
 -dataDict: Transforma el byta array de datos (los bytes luego de los primeros 10) en un diccionario con los datos edl mensaje
@@ -17,10 +17,10 @@ Usamos struct para pasar de un array de bytes a una lista de numeros/strings. (h
 '''
 
     
-def response(change:bool=False, status:int=255, protocol:int=255):
+def response(change:bool=False, tLayer:int=255, protocol:int=255):
     OK = 1
     CHANGE = 1 if change else 0
-    return pack("<BBBB", OK, CHANGE, status, protocol)
+    return pack("<BBBB", OK, CHANGE, tLayer, protocol)
 
 def parseData(packet):
     header = packet[:12]
@@ -29,8 +29,7 @@ def parseData(packet):
     dataD = dataDict(header["protocol"], data)
     if dataD is not None:
         dataSave(header, dataD)
-        
-    return None if dataD is None else {**header, **dataD}
+    if header["protocol"] == 5: return response()
 
 def protUnpack(protocol:int, data):
     # Valores
@@ -63,7 +62,7 @@ def dataDict(protocol:int, data):
             unp = protUnpack(protocol, data)
             return {key:val for (key,val) in zip(keys, unp)}
         return p
-    p_base = ["OK"]
+    p_base = ["Val"]
     p0 = ["Val", "Batt_level", "Timestamp"]
     p1 = ["Val", "Batt_level", "Timestamp", "Temp", "Pres", "Hum", "Co"]
     p2 = ["Val", "Batt_level", "Timestamp", "Temp", "Pres", "Hum", "Co", "RMS"]
