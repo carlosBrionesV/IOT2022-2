@@ -11,7 +11,7 @@ def dataSave(header, data):
     elif header["protocol"] == 4: N = 10
     query = '''INSERT INTO Datos (IDDevice, MAC, TransportLayer, IDProtocol'''
     values = ''') values (?, ?, ?, ?'''
-    for (i = 1, i < N, i += 1): 
+    for i in range(N):
         query += f", Data{i}"
         values += ", ?"
     values += ")"
@@ -21,3 +21,18 @@ def dataSave(header, data):
         cur = con.cursor()
         cur.execute(query, 
             (header["ID"], header["MAC"], header["TLayer"], header["protocol"], json.dumps(data)))
+        
+def dataGet():
+    with sql.connect("DB.sqlite") as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM Config")
+        rows = cur.fetchall()
+        return rows
+
+def modifyConfig(protocol, TLayer):
+    with sql.connect("DB.sqlite") as con:
+        cur = con.cursor()
+        cur.execute("UPDATE Config SET IdProtocol = ?, TransportLayer = ?", 
+            (protocol, TLayer))
+        con.commit()
+        print(f"Configuración actualizada: protocolo {protocol}, Tlayer {TLayer}")

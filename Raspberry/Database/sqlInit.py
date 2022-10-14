@@ -29,8 +29,9 @@ create_logs_table = '''CREATE TABLE Logs (
 );'''
 
 create_config_table = '''CREATE TABLE Config (
-    IdProtocol INTEGER,
+    IDProtocol INTEGER,
     TransportLayer INTEGER,
+    IDDevice INTEGER,
 );'''
 
 import sqlite3 as sql
