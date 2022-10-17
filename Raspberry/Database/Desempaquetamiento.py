@@ -22,14 +22,12 @@ def response(change:bool=False, tLayer:int=255, protocol:int=255):
     CHANGE = 1 if change else 0
     return pack("<BBBB", OK, CHANGE, tLayer, protocol)
 
-def parseData(packet):
+def parseMsg(packet):
     header = packet[:12]
     data = packet[12:]
     header = headerDict(header)
     dataD = dataDict(header["protocol"], data)
-    if dataD is not None:
-        dataSave(header, dataD)
-    if header["protocol"] == 5: return response()
+    return header, dataD
 
 def protUnpack(protocol:int, data):
     # Valores

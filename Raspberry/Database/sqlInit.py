@@ -1,8 +1,8 @@
-create_data_table = '''CREATE TABLE Datos (
-    IDDevice INTEGER,
+create_data_table = '''CREATE TABLE Datos(
+    IDDevice,
     MAC TEXT,
-    TransportLayer INTEGER,
-    IDProtocol INTEGER,
+    TransportLayer,
+    IDProtocol,
     Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     Data1,
     Data2,
@@ -17,29 +17,40 @@ create_data_table = '''CREATE TABLE Datos (
     Data11,
     Data12,
     Data13,
-    Data14,
+    Data14
 );'''
 
-create_logs_table = '''CREATE TABLE Logs (
-    IDDevice INTEGER,
+create_logs_table = '''CREATE TABLE Logs(
+    IDDevice,
     MAC TEXT,
-    TransportLayer INTEGER,
-    IDProtocol INTEGER,
-    Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    TransportLayer,
+    IDProtocol,
+    Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 );'''
 
-create_config_table = '''CREATE TABLE Config (
-    IDProtocol INTEGER,
-    TransportLayer INTEGER,
-    IDDevice INTEGER,
+create_config_table = '''CREATE TABLE Config(
+    IDProtocol,
+    TransportLayer,
 );'''
 
 import sqlite3 as sql
 
-# inicializa la BDD
-conn = sql.connect("DB.sqlite")
-cur = conn.cursor()
-cur.execute(create_data_table)
-cur.execute(create_logs_table)
-cur.execute(create_config_table)
-conn.close()
+def init_database():
+    conn = sql.connect('DB.sqlite')
+    c = conn.cursor()
+    try:
+        c.execute(create_data_table)
+    except sql.OperationalError:
+        print("La tabla Datos ya existe")
+    try:
+        c.execute(create_logs_table)
+    except sql.OperationalError:
+        print("La tabla Logs ya existe")
+    try:
+        c.execute(create_config_table)
+    except sql.OperationalError:
+        print("La tabla Config ya existe")
+    conn.commit()
+    conn.close()
+
+init_database()

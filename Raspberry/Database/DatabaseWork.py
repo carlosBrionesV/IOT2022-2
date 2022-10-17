@@ -21,18 +21,37 @@ def dataSave(header, data):
         cur = con.cursor()
         cur.execute(query, 
             (header["ID"], header["MAC"], header["TLayer"], header["protocol"], json.dumps(data)))
-        
-def dataGet():
-    with sql.connect("DB.sqlite") as con:
-        cur = con.cursor()
-        cur.execute("SELECT * FROM Config")
-        rows = cur.fetchall()
-        return rows
-
-def modifyConfig(protocol, TLayer):
-    with sql.connect("DB.sqlite") as con:
-        cur = con.cursor()
-        cur.execute("UPDATE Config SET IdProtocol = ?, TransportLayer = ?", 
-            (protocol, TLayer))
         con.commit()
-        print(f"Configuración actualizada: protocolo {protocol}, Tlayer {TLayer}")
+        print("Datos guardados")
+        cur.close()
+        
+def queryConfig(protocol):
+    with sql.connect("DB.sqlite") as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM Config WHERE IDProtocol = ?", (protocol))
+        rows = cur.fetchall()
+        if len(rows) == 0:
+            alternateConfig(protocol)
+            res : list = queryConfig(protocol)
+            return res
+        else:
+            return rows[0]
+
+# alterna la tranport layer de un protocolo, si el protocolo no existe lo crea con la transport layer por defecto (0 = UDP)
+def alternateConfig(protocol):
+    with sql.connect("DB.sqlite") as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM Config WHERE IDProtocol = ?", (protocol))
+        rows = cur.fetchall()
+        if len(rows) == 0:
+            cur.execute("INSERT INTO Config (IDProtocol, TransportLayer) values (?)", (protocol, 0))
+            print(f"Configuración alternativa creada: protocolo {protocol}, Tlayer 0")
+        else:
+            if rows[0][1] == 0:
+                cur.execute("UPDATE Config SET TransportLayer = 1 WHERE IDProtocol = ?", (protocol))
+                print(f"Configuración alternativa actualizada: protocolo {protocol}, Tlayer 1")
+            else:
+                cur.execute("UPDATE Config SET TransportLayer = 0 WHERE IDProtocol = ?", (protocol))
+                print(f"Configuración alternativa actualizada: protocolo {protocol}, Tlayer 0")
+        con.commit()
+        cur.close()
