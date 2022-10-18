@@ -3,55 +3,98 @@ import sqlite3 as sql
 
 # Documentación https://docs.python.org/3/library/sqlite3.html
 
-def dataSave(header, data):
-    if header["protocol"] == 0: N = 3
-    elif header["protocol"] == 1: N = 7
-    elif header["protocol"] == 2: N = 8
-    elif header["protocol"] == 3: N = 14
-    elif header["protocol"] == 4: N = 10
-    query = '''INSERT INTO Datos (IDDevice, MAC, TransportLayer, IDProtocol'''
-    values = ''') values (?, ?, ?, ?'''
-    for i in range(N):
-        query += f", Data{i}"
-        values += ", ?"
-    values += ")"
-    query += values
-    
-    with sql.connect("DB.sqlite") as con:
-        cur = con.cursor()
-        cur.execute(query, 
-            (header["ID"], header["MAC"], header["TLayer"], header["protocol"], json.dumps(data)))
-        con.commit()
-        print("Datos guardados")
-        cur.close()
-        
-def queryConfig(protocol):
-    with sql.connect("DB.sqlite") as con:
-        cur = con.cursor()
-        cur.execute("SELECT * FROM Config WHERE IDProtocol = ?", (protocol))
-        rows = cur.fetchall()
-        if len(rows) == 0:
-            alternateConfig(protocol)
-            res : list = queryConfig(protocol)
-            return res
-        else:
-            return rows[0]
+def dataSave(header: dict, data: dict):
+    """
+    Guarda los datos en la BDD \n
+    header: diccionario con los datos del encabezado \n
+    data: diccionario con los datos del paquete
+    """
+    # se busca el protocolo para ver cuantos datos se van a guardar
+    if header["IDProtocol"] == 0: N = 3
+    elif header["IDProtocol"] == 1: N = 7
+    elif header["IDProtocol"] == 2: N = 8
+    elif header["IDProtocol"] == 3: N = 14
+    elif header["IDProtocol"] == 4: N = 10
 
-# alterna la tranport layer de un protocolo, si el protocolo no existe lo crea con la transport layer por defecto (0 = UDP)
-def alternateConfig(protocol):
+    query = '''INSERT INTO Datos'''
+    columns = '''IDDevice, MAC, TransportLayer, IDProtocol'''
+    values = '''?, ?, ?, ?'''
+    for i in range(N):
+        columns += f", Data{i}"
+        values += ", ?"
+    query += f"({columns}) VALUES ({values})"
+
     with sql.connect("DB.sqlite") as con:
         cur = con.cursor()
-        cur.execute("SELECT * FROM Config WHERE IDProtocol = ?", (protocol))
+        cur.execute(query,(
+            header["IDDevice"], 
+            header["MAC"], 
+            header["TransportLayer"], 
+            header["IDProtocol"], 
+            json.dumps(data)
+            ))
+        con.commit()
+        print(f"(BDD DATA) Saved data with IDProtocol {header['IDProtocol']}")
+        cur.close()
+
+def logSave(header: dict):
+    """
+    Guarda los datos en la BDD \n
+    header: diccionario con los datos del encabezado
+    """
+    query = '''INSERT INTO Logs (IDDevice, MAC, TransportLayer, IDProtocol) VALUES (?, ?, ?, ?)'''
+    with sql.connect("DB.sqlite") as con:
+        cur = con.cursor()
+        cur.execute(query,(
+            header["IDDevice"], 
+            header["MAC"], 
+            header["TransportLayer"], 
+            header["IDProtocol"]
+            ))
+        con.commit()
+        print(f"(BDD LOG) Log saved with IDDevice {header['IDDevice']}")
+        cur.close()
+
+def getConfig(protocol: int, create = False) -> int:
+    """
+    Devuelve la TransportLayer de un protocolo dado en la BDD. \n
+    Si el protocolo no existe y create es True lo crea con la transport layer por defecto
+    """
+    query = "SELECT * FROM Config WHERE IDProtocol = ?"
+    with sql.connect("DB.sqlite") as con:
+        cur = con.cursor()
+        cur.execute(query, (protocol,))
         rows = cur.fetchall()
         if len(rows) == 0:
-            cur.execute("INSERT INTO Config (IDProtocol, TransportLayer) values (?)", (protocol, 0))
-            print(f"Configuración alternativa creada: protocolo {protocol}, Tlayer 0")
+            if create:
+                alternateConfig(protocol)
+                return 0
+            else: return -1
+        return rows[0][1]
+
+def alternateConfig(IDProtocol : int):
+    """
+    Alterna la TranportLayer de un protocolo dado en la BDD. \n
+    Si el protocolo no existe lo crea con la transport layer por defecto \n
+    (TransportLayer: 0 = UDP, 1 = TCP)
+    """
+    # se busca si existe el protocolo en la BDD
+    query = "SELECT * FROM Config WHERE IDProtocol = ?"
+    with sql.connect("DB.sqlite") as con:
+        cur = con.cursor()
+        cur.execute(query, (IDProtocol,))
+        rows = cur.fetchall()
+        # si no existe se crea
+        if len(rows) == 0:
+            insert_query = "INSERT INTO Config (IDProtocol) VALUES (?)"
+            cur.execute(insert_query, (IDProtocol,))
+            print(f"(BDD Config) INSERT: IDProtocol {IDProtocol} - TransportLayer 0")
+        # si existe se alterna
         else:
-            if rows[0][1] == 0:
-                cur.execute("UPDATE Config SET TransportLayer = 1 WHERE IDProtocol = ?", (protocol))
-                print(f"Configuración alternativa actualizada: protocolo {protocol}, Tlayer 1")
-            else:
-                cur.execute("UPDATE Config SET TransportLayer = 0 WHERE IDProtocol = ?", (protocol))
-                print(f"Configuración alternativa actualizada: protocolo {protocol}, Tlayer 0")
+            update_query = "UPDATE Config SET TransportLayer = ? WHERE IDProtocol = ?"
+            if rows[0][1] == 0: val = 1
+            else: val = 0
+            cur.execute(update_query, (val, IDProtocol,))
+            print(f"(BDD Config) UPDATE: IDProtocol {IDProtocol} => TransportLayer {val}")
         con.commit()
         cur.close()

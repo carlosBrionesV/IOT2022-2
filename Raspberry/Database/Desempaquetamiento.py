@@ -17,55 +17,64 @@ Usamos struct para pasar de un array de bytes a una lista de numeros/strings. (h
 '''
 
     
-def response(change:bool=False, tLayer:int=255, protocol:int=255):
+def response(change: bool = False, TransportLayer: int = 255, IDProtocol: int = 255):
     OK = 1
     CHANGE = 1 if change else 0
-    return pack("<BBBB", OK, CHANGE, tLayer, protocol)
+    return pack("<BBBB", OK, CHANGE, TransportLayer, IDProtocol)
 
 def parseMsg(packet):
     header = packet[:12]
     data = packet[12:]
     header = headerDict(header)
-    dataD = dataDict(header["protocol"], data)
+    dataD = dataDict(header["IDProtocol"], data)
     return header, dataD
 
-def protUnpack(protocol:int, data):
+def protUnpack(protocol:int, data: bytes):
     # Valores
     # Val 1B: 1 unsigned char = 1
-    # Batt_level 1B: 1 unsigned char = 1 ~ 100 (por tamaño en la tabla de protocolos)
+    # Batt_level 1B: 1 unsigned char = 1 ~ 100
     # Timestamp 4B: 1 long
-    # Temp 1B: 1 unsigned char = 5.0 ~ 30.0 (por tamaño en tabla de protocolos)
+    # Temp 1B: 1 unsigned char = 5.0 ~ 30.0
     # Pres 4B: 1 unsigned int = 1000 ~ 1200
-    # Hum 1B: 1 unsigned char = 30 ~ 80 (por tamaño en tabla de protocolos)
+    # Hum 1B: 1 unsigned char = 30 ~ 80
     # Co 4B: 1 float = 30.0 ~ 200.0
     # RMS 4B: 1 float
     # Amp 4B: 1 float = 0.004 ~ 0.15
     # Frec 4B: 1 float = 29.0 ~ 91.0
     # Acc 8000B: 2000 float
-    protocol_unpack = ["<BBl", "<BBlBIBf", "<BBlBIBff", "<BBlBIBffffffff", "<BBlBIBf2000f2000f2000f", "<B"]
+    protocol_unpack = [
+        "<BBl", 
+        "<BBlBIBf", 
+        "<BBlBIBff", 
+        "<BBlBIBffffffff", 
+        "<BBlBIBf2000f2000f2000f", 
+        "<B"
+        ]
     return unpack(protocol_unpack[protocol], data)
 
-def headerDict(data):
+def headerDict(data: bytes):
 #   H,  B,  B,  B,  B,  B,  B,  B,      B,        H
-    ID, M1, M2, M3, M4, M5, M6, TLayer, protocol, leng_msg = unpack("<H6B2BH", data)
+    ID, M1, M2, M3, M4, M5, M6, TLayer, protocol, leng_msg = unpack("<H8BH", data)
     MAC = ".".join([hex(x)[2:] for x in [M1, M2, M3, M4, M5, M6]])
-    return {"ID":ID, "MAC":MAC, "TLayer":TLayer, "protocol":protocol, "length":leng_msg}
+    return {"ID":ID, "MAC":MAC, "TransportLayer":TLayer, "IDProtocol":protocol, "length":leng_msg}
 
-def dataDict(protocol:int, data):
+def dataDict(protocol: int, data: bytes):
     if protocol not in [0, 1, 2, 3, 4, 5]:
         print("Error: protocol doesnt exist")
         return None
-    def protFunc(protocol, keys):
-        def p(data):
+    
+    def protFunc(protocol: int, keys: list):
+        def p(data: bytes):
             unp = protUnpack(protocol, data)
             return {key:val for (key,val) in zip(keys, unp)}
         return p
+    
     p_base = ["Val"]
-    p0 = ["Val", "Batt_level", "Timestamp"]
-    p1 = ["Val", "Batt_level", "Timestamp", "Temp", "Pres", "Hum", "Co"]
-    p2 = ["Val", "Batt_level", "Timestamp", "Temp", "Pres", "Hum", "Co", "RMS"]
-    p3 = ["Val", "Batt_level", "Timestamp", "Temp", "Pres", "Hum", "Co", "RMS", "Amp_x", "Frec_x", "Amp_y", "Frec_y", "Amp_z", "Frec_z"]
-    p4 = ["Val", "Batt_level", "Timestamp", "Temp", "Pres", "Hum", "Co", "Acc_x", "Acc_y", "Acc_z"]
+    p0 = p_base + ["Batt_level", "Timestamp"]
+    p1 = p0 + ["Temp", "Pres", "Hum", "Co"]
+    p2 = p1 + ["RMS"]
+    p3 = p2 + ["Amp_x", "Frec_x", "Amp_y", "Frec_y", "Amp_z", "Frec_z"]
+    p4 = p1 + ["Acc_x", "Acc_y", "Acc_z"]
     p = [p0, p1, p2, p3, p4, p_base]
 
     try:
