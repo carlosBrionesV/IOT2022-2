@@ -6,6 +6,25 @@ from Database.Desempaquetamiento import *
 from Database.DatabaseWork import *
 from Database.sqlInit import *
 
+# # 
+# En este archivo se encuentra el main del programa que correra en la Raspberry.
+# 
+# Inicialmente se crea la base de datos y dos servidores, uno TCP y otro UDP.
+# Se espera una conexion TCP para recibir un mensaje de consulta por la configuracion inicial.
+# (Este mensaje tiene header con IDProtocol = 5 y data con Val = 0-4)
+# Se consulta la configuracion para un IDProtocol en dataD["Val"].
+# Una vez realizada la consulta, se envia una respuesta y cierra la conexion TCP.
+# 
+# Luego, dependiendo de la configuracion del IDProtocol consultado, espera mensajes de ese protocolo
+# en un ciclo de recepcion.
+# Para cada mensaje recibido, se desempaqueta y se guarda en la base de datos un log y los datos.
+# 
+# Para terminar el ciclo, se puede utilizar Ctrl+C, lo cual sera interceptado para ofrecer la opcion
+# de cambiar de IDProtocol de datos o cambiar de TransportLayer de recepcion.
+# Utilizar Ctrl+C nuevamente terminara el main.
+# #
+
+
 class SOCKTYPE(Enum):
   TCP = 0
   UDP = 1
@@ -240,13 +259,15 @@ def main():
       break
 
     if currentType == SOCKTYPE.TCP:
-      change = recieveWithTCP(currentSock, currentType.value, IDProt)
+      (change, IDProt) = recieveWithTCP(currentSock, currentType.value, IDProt)
     elif currentType == SOCKTYPE.UDP:
-      change = recieveWithUDP(currentSock, currentType.value, IDProt)
+      (change, IDProt) = recieveWithUDP(currentSock, currentType.value, IDProt)
     
     if change:
       currentType = SOCKTYPE.UDP if currentType == SOCKTYPE.TCP else SOCKTYPE.TCP
       currentSock = UDPs if currentType == SOCKTYPE.UDP else TCPs
+      print(f"Changing TransportLayer to {currentType.name}")
+      change = False
     
     # si se debe cambiar a TCP, se cierra la conexion UDP y se abre una TCP
     # si se debe cambiar a UDP, se cierra la conexion TCP y se abre una UDP
