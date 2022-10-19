@@ -39,7 +39,7 @@ def dataSave(header: dict, data: dict):
 
 def logSave(header: dict):
     """
-    Guarda los datos en la BDD \n
+    Guarda las estadisticas de un mensaje en la BDD \n
     header: diccionario con los datos del encabezado
     """
     query = '''INSERT INTO Logs (IDDevice, MAC, TransportLayer, IDProtocol) VALUES (?, ?, ?, ?)'''
@@ -52,13 +52,14 @@ def logSave(header: dict):
             header["IDProtocol"]
             ))
         con.commit()
-        print(f"(BDD LOG) Log saved with IDDevice {header['IDDevice']}")
+        print(f"(BDD LOG) Log saved for IDDevice {header['IDDevice']}")
         cur.close()
 
 def getConfig(protocol: int, create = False) -> int:
     """
     Devuelve la TransportLayer de un protocolo dado en la BDD. \n
-    Si el protocolo no existe y create es True lo crea con la transport layer por defecto
+    Si el protocolo no existe y create es True lo crea con la transport layer por defecto \n
+    (TransportLayer: 0 = TCP, 1 = UDP)
     """
     query = "SELECT * FROM Config WHERE IDProtocol = ?"
     with sql.connect("DB.sqlite") as con:
@@ -76,7 +77,7 @@ def alternateConfig(IDProtocol : int):
     """
     Alterna la TranportLayer de un protocolo dado en la BDD. \n
     Si el protocolo no existe lo crea con la transport layer por defecto \n
-    (TransportLayer: 0 = UDP, 1 = TCP)
+    (TransportLayer: 0 = TCP, 1 = UDP)
     """
     # se busca si existe el protocolo en la BDD
     query = "SELECT * FROM Config WHERE IDProtocol = ?"
@@ -88,13 +89,13 @@ def alternateConfig(IDProtocol : int):
         if len(rows) == 0:
             insert_query = "INSERT INTO Config (IDProtocol) VALUES (?)"
             cur.execute(insert_query, (IDProtocol,))
-            print(f"(BDD Config) INSERT: IDProtocol {IDProtocol} - TransportLayer 0")
+            print(f"(BDD Config) INSERT: IDProtocol {IDProtocol} - TransportLayer 0 (TCP)")
         # si existe se alterna
         else:
             update_query = "UPDATE Config SET TransportLayer = ? WHERE IDProtocol = ?"
             if rows[0][1] == 0: val = 1
             else: val = 0
             cur.execute(update_query, (val, IDProtocol,))
-            print(f"(BDD Config) UPDATE: IDProtocol {IDProtocol} => TransportLayer {val}")
+            print(f"(BDD Config) UPDATE: IDProtocol {IDProtocol} => TransportLayer {val} ({'TCP' if val == 0 else 'UDP'})")
         con.commit()
         cur.close()

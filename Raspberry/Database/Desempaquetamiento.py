@@ -1,6 +1,6 @@
 from struct import unpack, pack
 import traceback
-from DatabaseWork import * 
+from Database.DatabaseWork import * 
 
 # Documentación struct unpack,pack :https://docs.python.org/3/library/struct.html#
 '''
@@ -16,18 +16,17 @@ Usamos struct para pasar de un array de bytes a una lista de numeros/strings. (h
 
 '''
 
-    
 def response(change: bool = False, TransportLayer: int = 255, IDProtocol: int = 255):
     OK = 1
     CHANGE = 1 if change else 0
     return pack("<BBBB", OK, CHANGE, TransportLayer, IDProtocol)
 
-def parseMsg(packet):
+def parseMsg(packet: bytes):
     header = packet[:12]
     data = packet[12:]
-    header = headerDict(header)
+    headerD = headerDict(header)
     dataD = dataDict(header["IDProtocol"], data)
-    return header, dataD
+    return headerD, dataD
 
 def protUnpack(protocol:int, data: bytes):
     # Valores

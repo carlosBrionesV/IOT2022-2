@@ -1,5 +1,7 @@
 import socket
 
+from Database.Desempaquetamiento import *
+
 TCP_IP = "192.168.4.1" # "localhost"
 TCP_PORT = 5000  # Port to listen on (non-privileged ports are > 1023)
 
@@ -11,31 +13,25 @@ def createTCPServer(IP: str, PORT: int):
     return sock
 
 def acceptTCPConnection(sock: socket.socket): return sock.accept()
-def sendTCPMessage(conn: socket.socket, msg: str): conn.send(msg)
+def sendTCPMessage(conn: socket.socket, msg): conn.send(msg)
 def receiveTCPMessage(conn: socket.socket): return conn.recv(1024)
 def closeTCPConnection(conn: socket.socket): conn.close()
+def closeTCPServer(sock: socket.socket): sock.close()
 
-def main():
-    s = createTCPServer(TCP_IP, TCP_PORT)
-    print(f"Listening (TCP) on {TCP_IP}:{TCP_PORT}")
-    conn, addr = acceptTCPConnection(s)
-    print(f"Connection from {addr}")
-    try:
-        while True:
-            print("Waiting for message..", end=" ")
-            msg = receiveTCPMessage(conn)
-            print(f".OK\nReceived: {msg}")
-            print(f"Sending message ({msg}) ..", end=" ")
-            sendTCPMessage(conn, msg)
-            print(".OK\n")
-            if msg.decode() == "quit": break
-    except KeyboardInterrupt:
-        msg = "quit".encode()
-        print(f"Sending message ({msg}) to {addr} ..", end=" ")
-        sendTCPMessage(conn, msg)
-        print(".OK\n")
-    
-    closeTCPConnection(conn)
-    print("Connection closed")
-
-if __name__ == "__main__": main()
+def handleProt5(conn: socket.socket, headerD: dict, dataD: dict):
+    """
+    Consulta la BDD por la configuracion de TransportLayer de un IDProtocol,
+    si no existe la crea como un nuevo registro (0 TCP).\n
+    Luego envia la respuesta y retorna un booleano que indica si se debe
+    cambiar el protocolo de transporte.
+    """
+    print("Protocol 5: Query config")
+    TLayer = getConfig(dataD["Val"], True)
+    # si config es 0, se envia TCP, si es 1, se envia UDP
+    change = False if TLayer == 0 else True
+    print(f"Queried Config for protocol {dataD['Val']}: {TLayer} ({'TCP' if TLayer == 0 else 'UDP'})")
+    resp = response(change, TLayer, dataD["Val"])
+    print(f"Sending message ({resp}) ..", end="")
+    sendTCPMessage(conn, resp)
+    print(".Ok\nResponse sent")
+    return change
