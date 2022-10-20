@@ -27,11 +27,10 @@ def handleProt5(conn: socket.socket, headerD: dict, dataD: dict):
     """
     print("Protocol 5: Query config")
     TLayer = getConfig(dataD["Val"], True)
-    # si config es 0, se envia TCP, si es 1, se envia UDP
-    change = False if TLayer == 0 else True
+    change = True
     print(f"Queried Config for protocol {dataD['Val']}: {TLayer} ({'TCP' if TLayer == 0 else 'UDP'})")
     resp = response(change, TLayer, dataD["Val"])
     print(f"Sending message ({resp}) ..", end="")
     sendTCPMessage(conn, resp)
     print(".Ok\nResponse sent")
-    return change
+    return change, TLayer, dataD["Val"]

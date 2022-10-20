@@ -27,13 +27,13 @@ def dataSave(header: dict, data: dict):
 
     with sql.connect("DB.sqlite") as con:
         cur = con.cursor()
-        cur.execute(query,(
+        print(f"(BDD Data) Saving data for IDDevice {header['IDDevice']}")
+        cur.execute(query, (
             header["IDDevice"], 
             header["MAC"], 
             header["TransportLayer"], 
             header["IDProtocol"], 
-            json.dumps(data)
-            ))
+            *data.values()))
         con.commit()
         print(f"(BDD DATA) Saved data with IDProtocol {header['IDProtocol']}")
         cur.close()

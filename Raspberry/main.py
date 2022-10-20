@@ -47,7 +47,7 @@ def initialSetup():
   
   return TCPs, UDPs
 
-def initialConection(sock:socket.socket):
+def initialConfig(sock:socket.socket):
   """
   Usa el socket para recibir un mensaje de configuracion inicial. \n
   Retorna si se debe cambiar a UDP y el IDProtocol a usar
@@ -61,10 +61,10 @@ def initialConection(sock:socket.socket):
     logSave(headerD)
 
     if headerD["IDProtocol"] == 5:
-      change = handleProt5(sock, headerD, dataD)
+      (change, TLayer, IDProt) = handleProt5(sock, headerD, dataD)
       break
     else: print("Not initial conection")
-  return change, dataD["Val"]
+  return change, TLayer, IDProt
 
 def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
   """
@@ -76,17 +76,20 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
     try:
       print("Waiting for message..", end="")
       pkt = receiveTCPMessage(sock)
-      if len(pkt) == 0: continue
+      
       print(f".OK\nReceived: {pkt}")
       (headerD, dataD) = parseMsg(pkt)
       print(f"Header: {headerD}\nData: {dataD}")
-      
-      logSave(headerD)
-      dataSave(headerD, dataD)
-      res = response(change, TLayer, IDProt)
-      print(f"Sending: {res}")
-      sendTCPMessage(sock, res)
-      print("OK")
+
+      if headerD["IDProtocol"] == 5:
+        (change, TLayer, IDProt) = handleProt5(sock, headerD, dataD)
+      else:
+        logSave(headerD)
+        dataSave(headerD, dataD)
+        res = response(change, TLayer, IDProt)
+        print(f"Sending: {res}")
+        sendTCPMessage(sock, res)
+        print("OK")
       # si se debe cambiar algo acaba el ciclo de recepcion
       if change: break
       # continuamos recibiendo mensajes
@@ -122,12 +125,6 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
           # set alternated TransportLayer
           TLayer = SOCKTYPE.UDP.value if currentTL == "TCP" else SOCKTYPE.TCP.value
           change = True
-        
-        while True:
-          i = input(f"Do you want to stop the reception loop? (y/n): ").lower().strip()
-          if i == "y" or i == "n": break
-        # close connection
-        if i == "y": break
 
         # Se recibe un ultimo mensaje TCP
         # La siguiente respuesta informara al ESP si se debe cambiar IDProtocol y/o TransportLayer
@@ -202,12 +199,6 @@ def recieveWithUDP(sock: socket.socket, TLayer = 0, IDProt = 0):
           # set alternated TransportLayer
           TLayer = SOCKTYPE.UDP.value if currentTL == "TCP" else SOCKTYPE.TCP.value
           change = True
-        
-        while True:
-          i = input(f"Do you want to stop the reception loop? (y/n): ").lower().strip()
-          if i == "y" or i == "n": break
-        # close connection
-        if i == "y": break
 
         # Se recibe un ultimo mensaje UDP
         # La siguiente respuesta informara al ESP si se debe cambiar IDProtocol y/o TransportLayer
@@ -236,22 +227,23 @@ def main():
   print("Waiting for conection..", end="")
   TCPs, addr = acceptTCPConnection(TCPs0)
   print(f"OK\nConnection from {addr}")
-  (change, IDProt) = initialConection(TCPs)
-  currentSock = UDPs if change else TCPs
-  currentType = SOCKTYPE.UDP if change else SOCKTYPE.TCP
+  (change, TLayer, IDProt) = initialConfig(TCPs)
+  currentType = SOCKTYPE.TCP if TLayer == 0 else SOCKTYPE.UDP
+  currentSock = TCPs if currentType == SOCKTYPE.TCP else UDPs
+  print(f"Current config: TLayer {currentType}, IDProt {IDProt}")
+  change = False
 
   # main loop
   while True:
-
     if currentType == SOCKTYPE.TCP:
       (change, TLayer, IDProt) = recieveWithTCP(currentSock, currentType.value, IDProt)
     elif currentType == SOCKTYPE.UDP:
       (change, TLayer, IDProt) = recieveWithUDP(currentSock, currentType.value, IDProt)
     
     if change:
-      currentType = SOCKTYPE.TCP if TLayer == SOCKTYPE.TCP else SOCKTYPE.UDP
+      currentType = SOCKTYPE.TCP if TLayer == 0 else SOCKTYPE.UDP
       currentSock = UDPs if currentType == SOCKTYPE.UDP else TCPs
-      print(f"Changing TransportLayer to {currentType.name}")
+      print(f"Current config: TLayer {currentType}, IDProt {IDProt}")
       change = False
     else:
       print("Ending program")
