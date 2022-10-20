@@ -8,25 +8,26 @@
 #include "../sensores/sensors.c"
 
 #define HEADER_SIZE 12
+#define DATA_SIZE {6, 16, 20, 44, 24016, 1}
 
-unsigned short lengmsg[6] = {6, 16, 20, 44, 24016, 1};
-unsigned short dataLen(char protocol){
-	return lengmsg[ (unsigned int) protocol];
+uint16_t lengmsg[] = {6, 16, 20, 44, 24016, 1};
+uint16_t dataLen(uint8_t protocol){
+	return lengmsg[protocol];
 }
 
-unsigned short messageLength(char protocol){
+uint16_t messageLength(uint8_t protocol){
 	return HEADER_SIZE + dataLen(protocol) + 1;
 }
 
-char *dataprotocol0();
-char *dataprotocol1();
-char *dataprotocol2();
-char *dataprotocol3();
-char *dataprotocol4();
-char *dataprotocol5();
+char *dataprotocol0(uint8_t val);
+char *dataprotocol1(uint8_t val);
+char *dataprotocol2(uint8_t val);
+char *dataprotocol3(uint8_t val);
+char *dataprotocol4(uint8_t val);
+char *dataprotocol5(uint8_t val);
 
 //Genera el header de un mensaje, con ID, MAC, TLayer, protocol y el largo del mensaje.
-char* header(char protocol, char transportLayer) {
+char* header(uint8_t protocol, uint8_t transportLayer) {
 	char* head = malloc(HEADER_SIZE);
 
 	char *ID = "D1";
@@ -36,40 +37,41 @@ char* header(char protocol, char transportLayer) {
 	esp_efuse_mac_get_default(MACaddrs);
 	memcpy((void*) &(head[2]), (void*) MACaddrs, 6);
 
-	head[8] = transportLayer;
-	head[9] = protocol;
-	unsigned short dataL = dataLen(protocol);
+	memcpy((void*) &(head[8]), (void*) &transportLayer, 1);
+	memcpy((void*) &(head[9]), (void*) &protocol, 1);
+	uint16_t dataL = dataLen(protocol);
 	memcpy((void*) &(head[10]), (void*) &dataL, 2);
 	free(MACaddrs);
 	return head;
 }
 
-char* mensaje(char protocol, char transportLayer){
+char* mensaje(uint8_t protocol, uint8_t transportLayer, uint8_t val) {
 	char* mnsj = malloc(messageLength(protocol));
 	mnsj[messageLength(protocol) - 1] = '\0';
+
 	char* hdr = header(protocol, transportLayer);
 	char* data;
 	switch (protocol) {
 		case 0:
-			data = dataprotocol0();
+			data = dataprotocol0(val);
 			break;
 		case 1:
-			data = dataprotocol1();
+			data = dataprotocol1(val);
 			break;
 		case 2:
-			data = dataprotocol2();
+			data = dataprotocol2(val);
 			break;
 		case 3:
-			data = dataprotocol3();
+			data = dataprotocol3(val);
 			break;
 		case 4:
-			data = dataprotocol4();
+			data = dataprotocol4(val);
 			break;
 		case 5:
-			data = dataprotocol5();
+			data = dataprotocol5(val);
 			break;
 		default:
-			data = dataprotocol5();
+			data = dataprotocol5(val);
 			break;
 	}
 	memcpy((void*) mnsj, (void*) hdr, HEADER_SIZE);
@@ -79,23 +81,21 @@ char* mensaje(char protocol, char transportLayer){
 	return mnsj;
 }
 
-// Arma un paquete para el protocolo de inicio, que busca solo respuesta
-char* dataprotocol5(){
+// Arma un paquete para el protocolo de inicio, que busca solo respuesta de configuracion
+char* dataprotocol5(uint8_t val) {
 	char* msg = malloc(dataLen(5));
-	unsigned char val = (unsigned char) 1;
-	msg[0] = val;
+	memcpy((void*) msg, (void*) &val, 1);
 	return msg;
 }
 
 // Arma un paquete para el protocolo 0, con la bateria
-char* dataprotocol0(){
+char* dataprotocol0(uint8_t val) {
 	int l = dataLen(0);
 	char* msg = malloc(l);
 	
-	unsigned char val = (unsigned char) 1;
 	msg[0] = val;
 
-	int batt = batt_sensor();
+	uint8_t batt = batt_sensor();
 	msg[1] = batt;
 	//timestamp
 	int t = 0;
@@ -103,11 +103,10 @@ char* dataprotocol0(){
 	return msg;
 }
 
-char* dataprotocol1(){
+char* dataprotocol1(uint8_t val) {
 	int l = dataLen(1);
 	char* msg = malloc(l);
 	
-	unsigned char val = (unsigned char) 1;
 	msg[0] = val;
 
 	int batt = batt_sensor();
@@ -131,11 +130,10 @@ char* dataprotocol1(){
 	return msg;
 }
 
-char* dataprotocol2(){
+char* dataprotocol2(uint8_t val) {
 	int l = dataLen(2);
 	char* msg = malloc(l);
 
-	unsigned char val = (unsigned char) 1;
 	msg[0] = val;
 	
 	float batt = batt_sensor();
@@ -162,11 +160,10 @@ char* dataprotocol2(){
 	return msg;
 }
 
-char* dataprotocol3(){
+char* dataprotocol3(uint8_t val) {
 	int l = dataLen(3);
 	char* msg = malloc(l);
 
-	unsigned char val = (unsigned char) 1;
 	msg[0] = val;
 	
 	float batt = batt_sensor();
@@ -211,11 +208,10 @@ char* dataprotocol3(){
 	return msg;
 }
 
-char* dataprotocol4(){
+char* dataprotocol4(uint8_t val) {
 	int l = dataLen(4);
 	char* msg = malloc(l);
 
-	unsigned char val = (unsigned char) 1;
 	msg[0] = val;
 	
 	float batt = batt_sensor();
