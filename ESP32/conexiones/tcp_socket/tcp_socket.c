@@ -19,31 +19,33 @@ static const char *TCP_TAG = "tcp client";
 int tcp_addr_family = AF_INET;
 int tcp_ip_protocol = IPPROTO_IP;
 
-struct my_TCPsocket {
-  char rx_buffer[128];
-  int sock; // socket
-  struct sockaddr_in dest_addr; // destination address
-};
-
-struct my_TCPsocket *tcp_create_socket(char *ip, int port) {
-  struct my_TCPsocket *s = malloc(sizeof(struct my_TCPsocket));
+int createTCPClient() {
   /* Create a TCP socket */
-  s->sock = socket(tcp_addr_family, SOCK_STREAM, tcp_ip_protocol);
-  if (s->sock < 0) {
+  int sock = socket(tcp_addr_family, SOCK_STREAM, tcp_ip_protocol);
+  if (sock < 0) {
     ESP_LOGE(TCP_TAG, "Unable to create socket: errno %d", errno);
-    return NULL;
+    return -1;
   }
   ESP_LOGI(TCP_TAG, "Socket created");
-  /* Configure destination address */
-  s->dest_addr.sin_addr.s_addr = inet_addr(ip);
-  s->dest_addr.sin_family = AF_INET;
-  s->dest_addr.sin_port = htons(port);
-  ESP_LOGI(TCP_TAG, "Socket destination address configured: %s:%d", ip, port);
-  return s;
+  return sock;
 }
 
-int tcp_connect_socket(struct my_TCPsocket *s) {
-  int err = connect(s->sock, (struct sockaddr *)&s->dest_addr, sizeof(s->dest_addr));
+void setTCPTimeout(int sock, int timeout) {
+  struct timeval receiving_timeout;
+  receiving_timeout.tv_sec = timeout / 1000;
+  receiving_timeout.tv_usec = (timeout % 1000) * 1000;
+  if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout, sizeof(receiving_timeout)) < 0) {
+    ESP_LOGE(TCP_TAG, "Failed to set socket receiving timeout");
+  }
+}
+
+int connectTCPClient(int sock, char *ip, int port) {
+  /* Connect to the remote host */
+  struct sockaddr_in dest_addr;
+  dest_addr.sin_addr.s_addr = inet_addr(ip);
+  dest_addr.sin_family = tcp_addr_family;
+  dest_addr.sin_port = htons(port);
+  int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
   if (err != 0) {
     ESP_LOGE(TCP_TAG, "Socket unable to connect: errno %d", errno);
     return -1;
@@ -52,24 +54,18 @@ int tcp_connect_socket(struct my_TCPsocket *s) {
   return 0;
 }
 
-struct sockaddr_in tcp_create_destination_addr(char *ip, int port) {
-  struct sockaddr_in dest_addr;
-  dest_addr.sin_addr.s_addr = inet_addr(ip);
-  dest_addr.sin_family = AF_INET;
-  dest_addr.sin_port = htons(port);
-  return dest_addr;
-}
-
-int tcp_send_message(int sock, char *message, int message_len) {
+int sendTCPMessage(int sock, char *message, int message_len) {
   int err = send(sock, message, message_len, 0);
   if (err < 0) {
     ESP_LOGE(TCP_TAG, "Error occurred during sending: errno %d", errno);
     return -1;
   }
+  ESP_LOGI(TCP_TAG, "Message sent");
   return 0;
 }
 
-int tcp_recieve_message(int sock, char *rx_buffer, int rx_buffer_len) {
+int recieveTCPMessage(int sock, char *rx_buffer, int rx_buffer_len) {
+  ESP_LOGI(TCP_TAG, "Waiting for data");
   int len = recv(sock, rx_buffer, rx_buffer_len - 1, 0);
   // Error occurred during receiving
   if (len < 0) {
@@ -79,17 +75,10 @@ int tcp_recieve_message(int sock, char *rx_buffer, int rx_buffer_len) {
   // Data received
   else {
     rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
-    ESP_LOGI(TCP_TAG, "Received %d bytes:", len);
-    ESP_LOGI(TCP_TAG, "%s", rx_buffer);
+    ESP_LOGI(TCP_TAG, "Received %d bytes: %s", len, rx_buffer);
+    return len;
   }
-  return len;
 }
 
-void tcp_close_socket(struct my_TCPsocket *s) {
-  if (s->sock != -1) {
-    ESP_LOGE(TCP_TAG, "Shutting down socket");
-    shutdown(s->sock, 0);
-    close(s->sock);
-  }
-  free(s);
-}
+void closeTCPConnection(int sock) {shutdown(sock, 0);}
+void closeTCPClient(int sock) {close(sock);}
