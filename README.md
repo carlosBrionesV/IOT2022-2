@@ -23,3 +23,14 @@ Contiene el codigo `c` a buildear y correr en la ESP32. Para mas informacion, re
 
 ## Raspberry
 Contiene el codigo `python` a utilizar en la raspberry. Para mas informacion, revisar su `README.md`
+
+## Objetivo general
+Simular un envio de datos de sensores por WiFi, con sockets TCP y UDP, hacia un servidor para ser guardados en una BDD.
+
+## Demostracion
+Se realizo un [video](https://youtu.be/78YTmrrEIcg) de 10 min aprox. que explica el estado de entrega del proyecto. En la descripcion hay un resumen de lo que se logro y no se logro, esperamos que pueda ser util para evaluar.
+
+## Integrantes
+- Nicolás Olguín S.
+- Daniel Nahum.
+- Carlos Briones.
