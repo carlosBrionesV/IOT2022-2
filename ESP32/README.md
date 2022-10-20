@@ -1,28 +1,25 @@
-# ESP32 Client
+# ESP32
 
-Se incluye el proyecto de ej para ambos tipos de Cliente (TCP y UDP)
-
-Se recomienda tener 4 archivos con el programa, de la siguiente forma
-
-**Cliente**
-|  
-|---------- Main  
-|---------- Conexiones  
-|---------- Empaquetamiento  
-|---------- Sensores  
-
+```
+ESP32
+|
+|--- main  
+|--- conexiones  
+|--- empaquetamiento  
+|--- sensores  
+```
 ### Main:
- Usara a los demás para realizar el flow de envio de datos, siendo el programa main del proyecto.
+ Usara a los demás para realizar el flow de envio de datos, siendo el programa main del proyecto. <br>
+ (Queriamos realizar la compilacion por componentes, pero no sabiamos como hacerlo, asi que terminamos importando 
+ directamente con #include los demas archivos)
+
 ### Conexiones:
- Definira todas las funciones para lo que tenga que ver con redes, esto se recomienda que sea:  
-    - Wifi_connect(Name_SSID, PASS), función para realizar la conexión wifi, esto se realiza dentro del ejemplo.  
-    - TCP_connect/UDP_connect(IPV4, PORT), realiza la conexión con un socket TCP/UDP.  
-    - TCP_send/UDP_send(data, large), manda los datos de tamaño large.  
-    - TCP_close/UDP_close, cierra el socket
+ - wifi_client: Contiene los codigos para conectarse a un WiFi, Importa de la configuracion (menuconfig) la SSID y contraseña de la red a la que conectarse.
+ - tcp_socket: Contiene las funciones relacionadas a administrar el uso de sockets tcp. Importa de la configuracion la direccion del servidor TCP al que conectarse.
+ - udp_socket: Contiene las funciones relacionadas a administrar el uso de sockets udp. Importa de la configuracion la direccion del servidor UDP al que enviar mensajes.
+
 ### Empaquetamiento:
- Tendra las funciones necesarias para armar el paquete de envio, este puede ser sola una función si prefiere incluirlo en otro de los archivos. Llamara a todo lo necesario desde Sensores. Se recomienda tener:  
-    - Header(protocolo), crea el header para cierto protocolo.  
-    - Body(protocolo), llama a las funciones de generación de dato y arma el cuerpo del mensaje.  
-    - Packet(protocolo), usando las funciones anteriores arma el paquete entero y lo deja preparado para envio.  
+ Tiene funciones para generar mensajes de envio de todos los protocolos. Llama a todo lo necesario desde sensores.
+ 
 ### Sensores:
  Genera todos los números necesarios para los datos, simulando ser sensores.

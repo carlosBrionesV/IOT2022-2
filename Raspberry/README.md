@@ -1,15 +1,35 @@
-# Raspberry Server
+# Raspberry
 
-Se incluye servidores Echo de ej para cada tipo de socket (TCP y UDP)
+```
+Raspberry
+|
+|--- Database 
+|    |--- DatabaseWork.py
+|    |--- Desempaquetamiento.py
+|    |--- sqlInit.py
+|
+|--- TCPServer
+|--- UDPServer
+|--- main.py
+```
 
-Lo que necesitan para esta parte es programar las funcionalidades de creación de sockets y la recepción del paquete, junto con su desempaquemiento y guardardado en la base de datos.
+## Main
+Contiene el programa que correra el servidor, inicializacion de la BDD, la creacion de sockets TCP y UDP, la configuracion inicial y los ciclos de recepcion de mensajes, ademas de varios inputs de usuario para alterar la configuracion durante la ejecucion.
 
-Se recomienda tener la siguiente estructura de proyecto
+## Database
+Contiene las funciones de python relacionadas a la base de datos y el desempaquetamiento de mensajes.
 
-**Server**
-|  
-|-------- ServerMain  
-|-------- Desempaquetamiento  
+- ### DatabaseWork
+  Contiene las funciones para guardar datos, logs y modificar la configuracion de recepcion (TransportLayer).
 
-- ServerMain: Contiene la creación de socket, la recepción de paquete. Importara y usara las funciones de Desempaquetamiento para lo demás.
-- Desempaquetamiento: Simplemente trae todas las funciones para recibir el paquete, abrirlo y guardarlo en una base de datos. Recuerde que en el enunciado esta descrito como se conforman los paquete
+- ### Desempaquetamiento
+  Contiene las funciones para desempaquetar los mensajes recibidos por la ESP. Ademas, tiene una funcion para empaquetar una respuesta simple a mandar.
+
+- ### sqlInit
+  Contiene la funcion para generar la BDD.
+
+## TCPServer
+Contiene las funciones para administrar sockets TCP. Ademas, tiene una funcion para manejar el caso inicial de conexion, donde se pregunta con IDProtocol 5 la configuracion actual.
+
+## UDPServer
+Continene las funciones para administrar sockets UDP.
