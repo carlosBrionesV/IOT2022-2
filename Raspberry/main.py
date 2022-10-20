@@ -115,6 +115,7 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
         
         # query TransportLayer for the current (maybe changed) IDProtocol
         currentTL = 'TCP' if getConfig(IDProt, True) == SOCKTYPE.TCP.value else 'UDP'
+        TLayer = SOCKTYPE.TCP.value if currentTL == 'TCP' else SOCKTYPE.UDP.value
         
         while True:
           i = input(f"Do you want to alternate TransportLayer for the IDProtocol {IDProt}, current: {currentTL}? (y/n): ")
@@ -124,11 +125,13 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
           alternateConfig(IDProt)
           # set alternated TransportLayer
           TLayer = SOCKTYPE.UDP.value if currentTL == "TCP" else SOCKTYPE.TCP.value
+          currentTL = 'TCP' if TLayer == SOCKTYPE.TCP.value else 'UDP'
           change = True
 
         # Se recibe un ultimo mensaje TCP
         # La siguiente respuesta informara al ESP si se debe cambiar IDProtocol y/o TransportLayer
         # Finalmente, se terminara el ciclo de recepcion
+        print(f"Current config: TLayer {TLayer}, IDProt {IDProt}")
         continue
 
       except KeyboardInterrupt:
@@ -189,6 +192,7 @@ def recieveWithUDP(sock: socket.socket, TLayer = 0, IDProt = 0):
         
         # query TransportLayer for the current (maybe changed) IDProtocol, insert it if it doesn't exist
         currentTL = 'TCP' if getConfig(IDProt, True) == SOCKTYPE.TCP.value else 'UDP'
+        TLayer = SOCKTYPE.TCP.value if currentTL == "TCP" else SOCKTYPE.UDP.value
         
         while True:
           i = input(f"Do you want to alternate TransportLayer for the IDProtocol {IDProt}, current: {currentTL}? (y/n): ")
@@ -198,6 +202,7 @@ def recieveWithUDP(sock: socket.socket, TLayer = 0, IDProt = 0):
           alternateConfig(IDProt)
           # set alternated TransportLayer
           TLayer = SOCKTYPE.UDP.value if currentTL == "TCP" else SOCKTYPE.TCP.value
+          currentTL = 'TCP' if TLayer == SOCKTYPE.TCP.value else 'UDP'
           change = True
 
         # Se recibe un ultimo mensaje UDP
