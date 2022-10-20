@@ -29,8 +29,6 @@ class SOCKTYPE(Enum):
   TCP = 0
   UDP = 1
 
-EXIT = False
-
 def initialSetup():
   # start database
   print("Starting database..")
@@ -54,40 +52,31 @@ def initialConection(sock:socket.socket):
   Usa el socket para recibir un mensaje de configuracion inicial. \n
   Retorna si se debe cambiar a UDP y el IDProtocol a usar
   """
-  print("Waiting for conection..", end="")
-  conn, addr = acceptTCPConnection(sock)
-  print(f"OK\nConnection from {addr}")
-
   while True:
     print("Waiting for message..", end="")
-    pkt = receiveTCPMessage(conn)
+    pkt = receiveTCPMessage(sock)
     print(f".OK\nReceived: {pkt}")
     (headerD, dataD) = parseMsg(pkt)
     print(f"Header: {headerD}\nData: {dataD}")
     logSave(headerD)
 
     if headerD["IDProtocol"] == 5:
-      change = handleProt5(conn, headerD, dataD)
+      change = handleProt5(sock, headerD, dataD)
       break
     else: print("Not initial conection")
-  
-  closeTCPConnection(conn)
   return change, dataD["Val"]
 
 def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
   """
   Recibe mensajes y responde con TCP en ciclo. \n
-  Al terminar, retorna si se debe cambiar a UDP o fue un error y el IDProtocol
+  Al terminar, retorna si se debe cambiar configuracion, TLayer y IDProtocol
   """
-  print("Waiting for conection..", end="")
-  conn, addr = acceptTCPConnection(sock)
-  print(f"OK\nConnection from {addr}")
-  
   change = False
   while True:
     try:
       print("Waiting for message..", end="")
-      pkt = receiveTCPMessage(conn)
+      pkt = receiveTCPMessage(sock)
+      if len(pkt) == 0: continue
       print(f".OK\nReceived: {pkt}")
       (headerD, dataD) = parseMsg(pkt)
       print(f"Header: {headerD}\nData: {dataD}")
@@ -96,9 +85,9 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
       dataSave(headerD, dataD)
       res = response(change, TLayer, IDProt)
       print(f"Sending: {res}")
-      sendTCPMessage(conn, res)
+      sendTCPMessage(sock, res)
       print("OK")
-      # si se debe cambiar a UDP acaba el ciclo de recepcion
+      # si se debe cambiar algo acaba el ciclo de recepcion
       if change: break
       # continuamos recibiendo mensajes
       continue
@@ -119,6 +108,7 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
             if i.isdigit() and int(i) >= 0 and int(i) <= 4: break
             else: print("Invalid IDProtocol")
           IDProt = int(i)
+          change = True
         
         # query TransportLayer for the current (maybe changed) IDProtocol
         currentTL = 'TCP' if getConfig(IDProt, True) == SOCKTYPE.TCP.value else 'UDP'
@@ -141,12 +131,11 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
 
         # Se recibe un ultimo mensaje TCP
         # La siguiente respuesta informara al ESP si se debe cambiar IDProtocol y/o TransportLayer
-        # Finalmente, si se cambio la TransportLayer, se terminara el ciclo de recepcion
+        # Finalmente, se terminara el ciclo de recepcion
         continue
 
       except KeyboardInterrupt:
-        print("Interrupted by user x2, ending reception loop and setting EXIT to True")
-        EXIT = True
+        print("Interrupted by user x2, ending reception loop")
         break
 
     # error no identificado en el ciclo de recepcion
@@ -154,17 +143,14 @@ def recieveWithTCP(sock: socket.socket, TLayer = 0, IDProt = 0):
       print(f"Error: {e}")
       # se termina el ciclo de recepcion
       break
-  
-  # cerrar conexion
-  closeTCPConnection(conn)
 
-  # se returna change para que el main sepa si debe cambiar a UDP o fue un error
-  return change, IDProt
+  # se returna change para que el main sepa si debe cambiar a config o fue un error
+  return change, TLayer, IDProt
 
 def recieveWithUDP(sock: socket.socket, TLayer = 0, IDProt = 0):
   """
   Recibe mensajes y responde con UDP en ciclo. \n
-  Al terminar, retorna si se debe cambiar a TCP o fue un error y el IDProtocol
+  Al terminar, retorna si se debe cambiar la config, TLayer y IDProtocol
   """
   change = False
   while True:
@@ -202,6 +188,7 @@ def recieveWithUDP(sock: socket.socket, TLayer = 0, IDProt = 0):
             if i.isdigit() and int(i) >= 0 and int(i) <= 4: break
             else: print("Invalid IDProtocol")
           IDProt = int(i)
+          change = True
         
         # query TransportLayer for the current (maybe changed) IDProtocol, insert it if it doesn't exist
         currentTL = 'TCP' if getConfig(IDProt, True) == SOCKTYPE.TCP.value else 'UDP'
@@ -224,12 +211,12 @@ def recieveWithUDP(sock: socket.socket, TLayer = 0, IDProt = 0):
 
         # Se recibe un ultimo mensaje UDP
         # La siguiente respuesta informara al ESP si se debe cambiar IDProtocol y/o TransportLayer
-        # Finalmente, si se cambio la TransportLayer, se terminara el ciclo de recepcion
+        # Finalmente, se terminara el ciclo de recepcion
+        print(f"Current config: TLayer {TLayer}, IDProt {IDProt}")
         continue
 
       except KeyboardInterrupt:
-        print("Interrupted by user x2, ending reception loop and setting EXIT to True")
-        EXIT = True
+        print("Interrupted by user x2, ending reception loop")
         break
   
     # error no identificado en el ciclo de recepcion
@@ -238,40 +225,41 @@ def recieveWithUDP(sock: socket.socket, TLayer = 0, IDProt = 0):
       # se termina el ciclo de recepcion
       break
 
-  # se returna change para que el main sepa si debe cambiar a TCP o fue un error
-  return change, IDProt
+  # se returna change para que el main sepa si debe cambiar config
+  return change, TLayer, IDProt
 
 
 def main():
-  (TCPs, UDPs) = initialSetup()
+  (TCPs0, UDPs) = initialSetup()
   
-  try:
-    # initial conection
-    (change, IDProt) = initialConection(TCPs)
-    currentSock = UDPs if change else TCPs
-    currentType = SOCKTYPE.UDP if change else SOCKTYPE.TCP
-  except KeyboardInterrupt: EXIT = True  
+  # initial conection
+  print("Waiting for conection..", end="")
+  TCPs, addr = acceptTCPConnection(TCPs0)
+  print(f"OK\nConnection from {addr}")
+  (change, IDProt) = initialConection(TCPs)
+  currentSock = UDPs if change else TCPs
+  currentType = SOCKTYPE.UDP if change else SOCKTYPE.TCP
 
   # main loop
   while True:
-    if EXIT: 
-      print("Exiting..")
-      break
 
     if currentType == SOCKTYPE.TCP:
-      (change, IDProt) = recieveWithTCP(currentSock, currentType.value, IDProt)
+      (change, TLayer, IDProt) = recieveWithTCP(currentSock, currentType.value, IDProt)
     elif currentType == SOCKTYPE.UDP:
-      (change, IDProt) = recieveWithUDP(currentSock, currentType.value, IDProt)
+      (change, TLayer, IDProt) = recieveWithUDP(currentSock, currentType.value, IDProt)
     
     if change:
-      currentType = SOCKTYPE.UDP if currentType == SOCKTYPE.TCP else SOCKTYPE.TCP
+      currentType = SOCKTYPE.TCP if TLayer == SOCKTYPE.TCP else SOCKTYPE.UDP
       currentSock = UDPs if currentType == SOCKTYPE.UDP else TCPs
       print(f"Changing TransportLayer to {currentType.name}")
       change = False
+    else:
+      print("Ending program")
+      break
     
-    # si se debe cambiar a TCP, se cierra la conexion UDP y se abre una TCP
-    # si se debe cambiar a UDP, se cierra la conexion TCP y se abre una UDP
-    # si no se debe cambiar, se continua con la misma conexion
+    # si se debe cambiar a TCP, empieza un ciclo de recepcion TCP
+    # si se debe cambiar a UDP, empieza un ciclo de recepcion UDP
+    # si no se debe cambiar, se termina el programa
     continue
   
   # cerrar conexiones
