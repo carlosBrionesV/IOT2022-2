@@ -6,7 +6,7 @@
 
 /*
 
-Aqui generamos los 5 tipos de protocolos con sus datos.
+Aqui generamos los 4 tipos de protocolos con sus datos.
 Las timestamps en realidad siempre mandamos 0, y por comodidad 
 guardamos la timestampo del tiempo de llegada en el servidor de la raspberry.
 
@@ -99,5 +99,8 @@ float acc_sensor_frecz() {
 }
 
 float acc_sensor_rms() {
-    return sqrtf(acc_sensor_ampx()*acc_sensor_ampx() + acc_sensor_ampy()*acc_sensor_ampy() + acc_sensor_ampz()*acc_sensor_ampz());
+    float x = acc_sensor_ampx();
+    float y = acc_sensor_ampy();
+    float z = acc_sensor_ampz();
+    return sqrtf(x*x + y*y + z*z);
 }
