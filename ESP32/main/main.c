@@ -36,61 +36,61 @@ void app_main(void) {
 
   int TCPs = createTCPClient(TCP_HOST_IP_ADDR, TCP_PORT);
   int UDPs = createUDPClient(UDP_HOST_IP_ADDR, UDP_PORT);
-  setTCPTimeout(TCPs, 5000);
-  setUDPTimeout(UDPs, 5000);
+  setTCPTimeout(TCPs, 5);
+  setUDPTimeout(UDPs, 5);
   
   uint8_t currentProtocol = 5;
   uint8_t currentTransportLayer = TCP;
 
   uint8_t ok, change, IDProtocol, TLayer;
   char *message;
-  char *rx_buffer = malloc(5);
-  int rx_buffer_len = sizeof(rx_buffer);
-  int message_len, err, len;
+  char *rx_buffer;
+  int rx_buffer_len = 8;
+  int message_len, err;
 
   while(1) {
     err = connectTCPClient(TCPs, TCP_HOST_IP_ADDR, TCP_PORT);
     if (err != 0) {
       closeTCPClient(TCPs);
       TCPs = createTCPClient(TCP_HOST_IP_ADDR, TCP_PORT);
-      wait_delay(3000);
+      ESP_LOGE(TAG, "Error connecting to TCP server, trying again in 5 seconds with a new socket");
+      wait_delay(5000);
       continue;
     }
     break;
   }
 
-  // ask for the TransportLayer configuration for IDProtocol
+  // ask for the TransportLayer configuration for IDProtocol 0
   message = mensaje(currentProtocol, currentTransportLayer, 0);
   message_len = messageLength(currentProtocol);
   while(1) {
     ESP_LOGI(TAG, "Sending message with IDProtocol: %d and TLayer: %d", currentProtocol, currentTransportLayer);
-    if (currentTransportLayer == TCP) {
-      sendTCPMessage(TCPs, message, message_len);
-    } else {
-      sendUDPMessage(UDPs, UDP_HOST_IP_ADDR, UDP_PORT, message, message_len);
-    }
-    wait_delay(500);
-    
+    sendTCPMessage(TCPs, message, message_len);
+    wait_delay(1000);
+
     while(1) {
+      rx_buffer = malloc(8);
       if (currentTransportLayer == TCP) {
-        len = recieveTCPMessage(TCPs, rx_buffer, rx_buffer_len);
+        err = recieveTCPMessage(TCPs, rx_buffer, rx_buffer_len);
       } else {
-        len = recieveUDPMessage(UDPs, rx_buffer, rx_buffer_len);
+        err = recieveUDPMessage(UDPs, rx_buffer, rx_buffer_len);
       }
-      if (len > 0) {
+      ESP_LOGI(TAG, "Current buffer: %d %d %d %d", rx_buffer[0], rx_buffer[1], rx_buffer[2], rx_buffer[3]);
+
+      ok = rx_buffer[0];
+      if (ok == 1) {
+        change = rx_buffer[1];
+        TLayer = rx_buffer[2];
+        IDProtocol = rx_buffer[3];
+        ESP_LOGI(TAG, "Recieved response with OK: %d, change: %d, TLayer: %d, IDProtocol: %d", ok, change, TLayer, IDProtocol);
         break;
       }
-      wait_delay(2000);
+      wait_delay(3000);
     }
-
-    ok = rx_buffer[0];
-    // configuration recieved
-    if (!ok) {
-      change = rx_buffer[1];
-      TLayer = rx_buffer[2];
-      IDProtocol = rx_buffer[3];
-      break;
-    }
+    if (ok == 1) break;
+    free(rx_buffer);
+    rx_buffer = NULL;
+    wait_delay(3000);
   }
 
   free(message);
@@ -99,7 +99,7 @@ void app_main(void) {
 
   // start sending messages
   while(1) {
-    if (change) {
+    if (change == 1) {
       ESP_LOGI(TAG, "Configuration changed");
       ESP_LOGI(TAG, "New configuration: TLayer = %d, IDProtocol = %d", TLayer, IDProtocol);
       currentProtocol = IDProtocol;
@@ -109,48 +109,40 @@ void app_main(void) {
 
     message = mensaje(currentProtocol, currentTransportLayer, 1);
     message_len = messageLength(currentProtocol);
+    rx_buffer = malloc(8);
     
-    ESP_LOGI(TAG, "Sending message: %s", message);
+    ESP_LOGI(TAG, "Sending with TLayer = %d, IDProtocol = %d", currentTransportLayer, currentProtocol);
     if (currentTransportLayer == TCP) {
       sendTCPMessage(TCPs, message, message_len);
     } else {
       sendUDPMessage(UDPs, UDP_HOST_IP_ADDR, UDP_PORT, message, message_len);
     }
-    
+    wait_delay(1000);
+
     while (1) {
-      int tries = 0;
-      if (tries > 5) {
-        free(message);
-        message = NULL;
-        break;
-      }
       if (currentTransportLayer == TCP) {
-        len = recieveTCPMessage(TCPs, rx_buffer, rx_buffer_len);
+        err = recieveTCPMessage(TCPs, rx_buffer, rx_buffer_len);
       } else {
-        len = recieveUDPMessage(UDPs, rx_buffer, rx_buffer_len);
+        err = recieveUDPMessage(UDPs, rx_buffer, rx_buffer_len);
       }
-      if (len < 1) {
-        wait_delay(1000);
-        continue;
-      }
+      ESP_LOGI(TAG, "Current buffer: %d %d %d %d", rx_buffer[0], rx_buffer[1], rx_buffer[2], rx_buffer[3]);
 
       ok = rx_buffer[0];
-      // configuration recieved
-      if (!ok) {
+      if (ok == 1) {
         change = rx_buffer[1];
         TLayer = rx_buffer[2];
         IDProtocol = rx_buffer[3];
+        ESP_LOGI(TAG, "Recieved response with OK: %d, change: %d, TLayer: %d, IDProtocol: %d", ok, change, TLayer, IDProtocol);
         break;
       }
+      wait_delay(3000);
     }
-    // configuration recieved
-    if (!ok) {
-      change = rx_buffer[1];
-      TLayer = rx_buffer[2];
-      IDProtocol = rx_buffer[3];
-      break;
-    }
-
+    
+    free(message);
+    message = NULL;
+    free(rx_buffer);
+    rx_buffer = NULL;
+    wait_delay(3000);
   }
   
   closeTCPClient(TCPs);

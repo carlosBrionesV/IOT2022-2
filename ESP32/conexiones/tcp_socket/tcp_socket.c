@@ -30,13 +30,11 @@ int createTCPClient() {
   return sock;
 }
 
-void setTCPTimeout(int sock, int timeout) {
-  struct timeval receiving_timeout;
-  receiving_timeout.tv_sec = timeout / 1000;
-  receiving_timeout.tv_usec = (timeout % 1000) * 1000;
-  if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout, sizeof(receiving_timeout)) < 0) {
-    ESP_LOGE(TCP_TAG, "Failed to set socket receiving timeout");
-  }
+void setTCPTimeout(int sock, int timeout_sec) {
+  struct timeval tv;
+  tv.tv_sec = timeout_sec;
+  tv.tv_usec = 0;
+  setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 }
 
 int connectTCPClient(int sock, char *ip, int port) {
@@ -74,7 +72,7 @@ int recieveTCPMessage(int sock, char *rx_buffer, int rx_buffer_len) {
   }
   // Data received
   else {
-    rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
+    rx_buffer[len] = '\0'; // Null-terminate whatever we received and treat like a string
     ESP_LOGI(TCP_TAG, "Received %d bytes: %s", len, rx_buffer);
     return len;
   }
