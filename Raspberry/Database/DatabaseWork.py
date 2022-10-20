@@ -15,12 +15,13 @@ def dataSave(header: dict, data: dict):
     elif header["IDProtocol"] == 2: N = 8
     elif header["IDProtocol"] == 3: N = 14
     elif header["IDProtocol"] == 4: N = 10
+    elif header["IDProtocol"] == 5: return
 
     query = '''INSERT INTO Datos'''
     columns = '''IDDevice, MAC, TransportLayer, IDProtocol'''
     values = '''?, ?, ?, ?'''
     for i in range(N):
-        columns += f", Data{i}"
+        columns += f", Data{i+1}"
         values += ", ?"
     query += f"({columns}) VALUES ({values})"
 

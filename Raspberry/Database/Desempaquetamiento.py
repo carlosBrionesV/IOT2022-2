@@ -23,9 +23,9 @@ def response(change: bool = False, TransportLayer: int = 255, IDProtocol: int = 
 
 def parseMsg(packet: bytes):
     header = packet[:12]
-    data = packet[12:]
+    data = packet[12:][:-1] # El ultimo byte es '\0'
     headerD = headerDict(header)
-    dataD = dataDict(header["IDProtocol"], data)
+    dataD = dataDict(headerD["IDProtocol"], data)
     return headerD, dataD
 
 def protUnpack(protocol:int, data: bytes):
@@ -42,20 +42,21 @@ def protUnpack(protocol:int, data: bytes):
     # Frec 4B: 1 float = 29.0 ~ 91.0
     # Acc 8000B: 2000 float
     protocol_unpack = [
-        "<BBl", 
-        "<BBlBIBf", 
-        "<BBlBIBff", 
-        "<BBlBIBffffffff", 
-        "<BBlBIBf2000f2000f2000f", 
+        "<2Bl", 
+        "<2BlBIBf", 
+        "<2BlBIB2f", 
+        "<2BlBIB8f", 
+        "<2BlBIBf2000f2000f2000f", 
         "<B"
         ]
     return unpack(protocol_unpack[protocol], data)
 
 def headerDict(data: bytes):
-#   H,  B,  B,  B,  B,  B,  B,  B,      B,        H
-    ID, M1, M2, M3, M4, M5, M6, TLayer, protocol, leng_msg = unpack("<H8BH", data)
+#   B,   B,   B,  B,  B,  B,  B,  B,  B,      B,        H
+    ID1, ID2, M1, M2, M3, M4, M5, M6, TLayer, protocol, leng_msg = unpack("<2B8BH", data)
+    ID = ID1 + ID2
     MAC = ".".join([hex(x)[2:] for x in [M1, M2, M3, M4, M5, M6]])
-    return {"ID":ID, "MAC":MAC, "TransportLayer":TLayer, "IDProtocol":protocol, "length":leng_msg}
+    return {"IDDevice":ID, "MAC":MAC, "TransportLayer":TLayer, "IDProtocol":protocol, "length":leng_msg}
 
 def dataDict(protocol: int, data: bytes):
     if protocol not in [0, 1, 2, 3, 4, 5]:
