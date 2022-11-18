@@ -12,8 +12,16 @@ class GUIController:
         print()
 
     def setSignals(self):
-        pass
+        self.ui.search_esp32.clicked.connect(self.criticalError)
     
+    def criticalError(self):
+        popup = QtWidgets.QMessageBox(parent = self.parent)
+        popup.setWindowTitle("ERROR MASIVO")
+        popup.setText("QUE HAS APRETADO, NOS HAS CONDENADO A TODOS")
+        popup.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+        popup.exec()
+        return 
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
