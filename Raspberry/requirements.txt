@@ -1,4 +1,7 @@
+async-timeout==4.0.2
+bleak==0.19.4
 click==7.1.2
+dbus-fast==1.75.0
 enum-compat==0.0.3
 numpy==1.23.4
 pygatt==4.0.5
