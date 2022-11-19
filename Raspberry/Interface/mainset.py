@@ -1,5 +1,5 @@
 import numpy
-from ex import Ui_Dialog
+from ui import Ui_Dialog
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
