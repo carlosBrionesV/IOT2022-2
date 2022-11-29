@@ -5,7 +5,12 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 import logging
 
+VIA_BLUETHOOTH = 0
+VIA_TCP = 1
+
 class GUIController:
+    via = VIA_BLUETHOOTH
+    
     def __init__(self,parent):
         self.ui=Ui_Dialog()
         self.parent = parent
@@ -13,6 +18,11 @@ class GUIController:
 
     def setSignals(self):
         self.ui.search_esp32.clicked.connect(self.criticalError)
+        self.ui.config_mode_select.currentIndexChanged.connect(self.configModeChanged)
+    
+    def configModeChanged(self):
+        self.via = self.ui.config_mode_select.currentIndex()
+        self.ui.port_tcp_field.setText(str(self.via))
     
     def criticalError(self):
         popup = QtWidgets.QMessageBox(parent = self.parent)
