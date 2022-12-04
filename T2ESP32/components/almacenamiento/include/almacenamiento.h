@@ -1,5 +1,6 @@
 
 // define keys index for switch case
+#define CONFIGURATED_KEY 0
 #define STATUS_KEY 1
 #define ID_PROTOCOL_KEY 2
 #define BMI270_SAMPLING_KEY 3

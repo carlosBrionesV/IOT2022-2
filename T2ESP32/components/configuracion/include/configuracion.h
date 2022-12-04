@@ -1,7 +1,10 @@
 
+#define CONFIG_TAG "CONFIG"
+#define CONFIG_PAYLOAD_SIZE 100
 #define CONFIG_SIZE 98
 
 typedef struct T2_CONFIG {
+
     // int8_t of 1 byte
     int8_t STATUS;
     int8_t ID_PROTOCOL;
@@ -19,11 +22,12 @@ typedef struct T2_CONFIG {
     char PASS[32];
 } T2_CONFIG;
 
-#define CONFIG_TAG "[CONFIG]"
 
 T2_CONFIG extractConfig(char *buffer);
+int readConfigurated();
 T2_CONFIG readConfig();
 int writeConfig(T2_CONFIG config);
 void resetConfig();
 char *numToIp(uint32_t ip);
+uint32_t ipToNum(char *ip);
 void printConfig(T2_CONFIG config);

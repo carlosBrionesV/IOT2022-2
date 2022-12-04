@@ -56,6 +56,9 @@ int readStorageValue(int key, int8_t *i8Value, int32_t *i32Value, char *strValue
     switch (key) 
     {
     // int8_t
+    case CONFIGURATED_KEY:
+        err = nvs_get_i8(read_handle, "CONFIGURATED", i8Value);
+        break;
     case STATUS_KEY:
         err = nvs_get_i8(read_handle, "STATUS", i8Value);
         break;
@@ -116,6 +119,9 @@ int writeStorageValue(int key, int8_t i8Value, int32_t i32Value, char *strValue)
     switch (key) 
     {
     // int8_t
+    case CONFIGURATED_KEY:
+        err = nvs_set_i8(write_handle, "CONFIGURATED", i8Value);
+        break;
     case STATUS_KEY:
         err = nvs_set_i8(write_handle, "STATUS", i8Value);
         break;

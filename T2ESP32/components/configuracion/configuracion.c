@@ -1,41 +1,79 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "esp_log.h"
 
 #include "configuracion.h"
 #include "almacenamiento.h"
 
-// from a buffer of bytes, extract and return the value of the configuration
-T2_CONFIG extractConfig(char *buffer) {
+/**
+ * @brief from a buffer of bytes, it extracts the configuration.
+ *
+ * The expected format is:
+ * - 1 byte: OK
+ * - 1 byte: STATUS
+ * - 1 byte: ID_PROTOCOL
+ * - 4 byte: BMI270_SAMPLING
+ * - 4 byte: BMI270_ACC_SENSIBILITY
+ * - 4 byte: BMI270_GYRO_SENSIBILITY
+ * - 4 byte: BME688_SAMPLING
+ * - 4 byte: DISCONTINUOS_TIME
+ * - 4 byte: PORT_TCP
+ * - 4 byte: PORT_UDP
+ * - 4 byte: HOST_IP_ADDR
+ * - 32 byte: SSID
+ * - 32 byte: PASS
+ *
+ * TOTAL: 99 bytes + \0
+ *
+ * @param buffer
+ * @return * T2_CONFIG
+ */
+T2_CONFIG extractConfig(char *buffer)
+{
     T2_CONFIG config;
 
+    // char recv_OK = buffer[0];
+
     // int8_t
-    memcpy(&config.STATUS, &buffer[0], sizeof(int8_t));
-    memcpy(&config.ID_PROTOCOL, &buffer[1], sizeof(int8_t));
+    memcpy(&config.STATUS, &buffer[1], sizeof(int8_t));
+    memcpy(&config.ID_PROTOCOL, &buffer[2], sizeof(int8_t));
 
     // int32_t
-    memcpy(&config.BMI270_SAMPLING, &buffer[2], sizeof(int32_t));
-    memcpy(&config.BMI270_ACC_SENSIBILITY, &buffer[6], sizeof(int32_t));
-    memcpy(&config.BMI270_GYRO_SENSIBILITY, &buffer[10], sizeof(int32_t));
-    memcpy(&config.BME688_SAMPLING, &buffer[14], sizeof(int32_t));
-    memcpy(&config.DISCONTINUOS_TIME, &buffer[18], sizeof(int32_t));
-    memcpy(&config.PORT_TCP, &buffer[22], sizeof(int32_t));
-    memcpy(&config.PORT_UDP, &buffer[26], sizeof(int32_t));
-    memcpy(&config.HOST_IP_ADDR, &buffer[30], sizeof(int32_t));
+    memcpy(&config.BMI270_SAMPLING, &buffer[3], sizeof(int32_t));
+    memcpy(&config.BMI270_ACC_SENSIBILITY, &buffer[7], sizeof(int32_t));
+    memcpy(&config.BMI270_GYRO_SENSIBILITY, &buffer[11], sizeof(int32_t));
+    memcpy(&config.BME688_SAMPLING, &buffer[15], sizeof(int32_t));
+    memcpy(&config.DISCONTINUOS_TIME, &buffer[19], sizeof(int32_t));
+    memcpy(&config.PORT_TCP, &buffer[23], sizeof(int32_t));
+    memcpy(&config.PORT_UDP, &buffer[27], sizeof(int32_t));
+    memcpy(&config.HOST_IP_ADDR, &buffer[31], sizeof(int32_t));
 
     // string
-    memcpy(&config.SSID, &buffer[34], STRING_SIZE);
-    memcpy(&config.PASS, &buffer[66], STRING_SIZE);
+    memcpy(&config.SSID, &buffer[35], STRING_SIZE);
+    memcpy(&config.PASS, &buffer[67], STRING_SIZE);
 
     return config;
 }
 
-T2_CONFIG readConfig() {
+int readConfigurated()
+{
+    int8_t configurated;
+
+    int32_t *i32Value = (int32_t *)NULL;
+    char *strValue = (char *)NULL;
+
+    readStorageValue(CONFIGURATED_KEY, &configurated, i32Value, strValue);
+    return configurated != 0;
+}
+
+T2_CONFIG readConfig()
+{
     T2_CONFIG config;
 
-    int8_t *i8Value = (int8_t *) NULL;
-    int32_t *i32Value = (int32_t *) NULL;
-    char *strValue = (char *) NULL;
+    int8_t *i8Value = (int8_t *)NULL;
+    int32_t *i32Value = (int32_t *)NULL;
+    char *strValue = (char *)NULL;
 
     // int8_t
     readStorageValue(STATUS_KEY, &config.STATUS, i32Value, strValue);
@@ -56,12 +94,13 @@ T2_CONFIG readConfig() {
     return config;
 }
 
-int writeConfig(T2_CONFIG config) {
+int writeConfig(T2_CONFIG config)
+{
 
     int8_t i8Value = 0;
     int32_t i32Value = 0;
     char *strValue = "";
-    
+
     // int8_t
     writeStorageValue(STATUS_KEY, config.STATUS, i32Value, strValue);
     writeStorageValue(ID_PROTOCOL_KEY, config.ID_PROTOCOL, i32Value, strValue);
@@ -78,10 +117,14 @@ int writeConfig(T2_CONFIG config) {
     writeStorageValue(SSID_KEY, i8Value, i32Value, config.SSID);
     writeStorageValue(PASS_KEY, i8Value, i32Value, config.PASS);
 
+    // save configurated as true
+    writeStorageValue(CONFIGURATED_KEY, true, i32Value, strValue);
+
     return 0;
 }
 
-void resetConfig() {
+void resetConfig()
+{
     T2_CONFIG config;
 
     config.STATUS = 0;
@@ -98,16 +141,34 @@ void resetConfig() {
     strcpy(config.PASS, "");
 
     writeConfig(config);
+    // overwrite configurated as false
+    writeStorageValue(CONFIGURATED_KEY, false, 0, "");
 }
 
-char *numToIp(uint32_t ip) {
+char *numToIp(uint32_t ip)
+{
     static char ipStr[16];
     sprintf(ipStr, "%ld.%ld.%ld.%ld", (ip >> 0) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
     return ipStr;
 }
 
+uint32_t ipToNum(char *ip)
+{
+    uint32_t ipNum = 0;
+    char *token = strtok(ip, ".");
+    int i = 0;
+    while (token != NULL)
+    {
+        ipNum += atoi(token) << (i * 8);
+        token = strtok(NULL, ".");
+        i++;
+    }
+    return ipNum;
+}
+
 // function to print the configuration
-void printConfig(T2_CONFIG config) {
+void printConfig(T2_CONFIG config)
+{
     ESP_LOGI(CONFIG_TAG, "Printing configuration");
     printf("\tSTATUS: %d\n", config.STATUS);
     printf("\tID_PROTOCOL: %d\n", config.ID_PROTOCOL);
