@@ -226,5 +226,5 @@ cython_debug/
 #.idea/
 
 DB.sqlite
-AUX_BLE/*
+TEMP/*
 TODO.txt
