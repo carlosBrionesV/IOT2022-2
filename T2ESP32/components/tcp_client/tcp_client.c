@@ -45,10 +45,9 @@ int socketTcp()
 bool checkTcp(T2_CONFIG config)
 {
     return (
-    config.STATUS == 20 || 
-    config.STATUS == 21 ||
-    config.STATUS == 22
-    );
+        config.STATUS == 20 ||
+        config.STATUS == 21 ||
+        config.STATUS == 22);
 }
 
 /**
@@ -135,8 +134,8 @@ int recvTcp(int sock, char *rx_buffer, int rx_buffer_len)
  * @brief function to manage a tcp client main loop.
  * It works for status 21 and 22
  *
- * 
- * @return int 
+ *
+ * @return int
  */
 int manageTcp()
 {
@@ -152,7 +151,7 @@ int manageTcp()
             ESP_LOGI(TCP_TAG, "Status %d not allowed", config.STATUS);
             return -1;
         }
-        
+
         // socket creation
         int sock = socketTcp();
         if (sock < 0)
@@ -240,20 +239,20 @@ int manageTcp()
 
             if (recv_CHANGE)
             {
-                bool statusChanged = false;
-                if (recv_STATUS != config.STATUS)
+                bool transportLayerChanged = false;
+                if (recv_STATUS != 21 && recv_STATUS != 22)
                 {
-                    statusChanged = true;
+                    transportLayerChanged = true;
                 }
 
                 config.STATUS = recv_STATUS;
                 config.ID_PROTOCOL = recv_PROTOCOL;
-             
+
                 writeConfig(config);
 
                 ESP_LOGI(TCP_TAG, "config changed");
 
-                if (statusChanged)
+                if (transportLayerChanged)
                 {
                     ESP_LOGI(TCP_TAG, "closing socket due to status change");
                     shutdown(sock, 0);
@@ -270,16 +269,130 @@ int manageTcp()
                 // stop the wifi
                 esp_wifi_stop();
                 ESP_LOGI(TCP_TAG, "wifi stopped, entering deepsleep for %ld minutes", config.DISCONTINUOS_TIME);
-                
+
                 // enter deepsleep
                 esp_deep_sleep_start();
-                
+
                 // restore the wifi
                 esp_wifi_restore();
             }
 
             // wait for the next send
             vTaskDelay(1000 / portTICK_PERIOD_MS);
+        }
+    }
+}
+
+int configurateTcpClient()
+{
+    T2_CONFIG config = readConfig();
+
+    char rx_buffer[128];
+    int rx_buffer_len = sizeof(rx_buffer);
+    char *host_ip = numToIp(config.HOST_IP_ADDR);
+
+    if (!checkTcp(config))
+    {
+        ESP_LOGI(TCP_TAG, "Status %d not allowed", config.STATUS);
+        return -1;
+    }
+
+    ESP_LOGI(TCP_TAG, "Configuring ESP32 through TCP");
+
+    while (1)
+    {
+        // socket creation
+        int sock = socketTcp();
+        if (sock < 0)
+        {
+            if (sock != -1)
+            {
+                ESP_LOGE(TCP_TAG, "Shutting down socket and restarting...");
+                shutdown(sock, 0);
+                close(sock);
+            }
+
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        // socket connection
+        if (connectTcp(sock, host_ip, config.PORT_TCP) != 0)
+        {
+            if (sock != -1)
+            {
+                ESP_LOGE(TCP_TAG, "Shutting down socket and restarting...");
+                shutdown(sock, 0);
+                close(sock);
+            }
+
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        // send and recv loop
+        int send_tries = 0;
+        bool recieved = false;
+        while (!recieved && send_tries < TCP_MAX_SEND_TRIES)
+        {
+            ESP_LOGI(TCP_TAG, "Sending message to %s:%ld", host_ip, config.PORT_TCP);
+            char *msg = mensaje(0, 20, 0);
+
+            int err = sendTcp(sock, msg, messageLen(0));
+            free(msg);
+
+            if (err < 0)
+            {
+                send_tries++;
+                // wait for the next send try
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                continue;
+            }
+            send_tries = 0;
+
+            // receive loop
+            int recv_tries = 0;
+            while (recv_tries < TCP_MAX_RECV_TRIES)
+            {
+                if (recvTcp(sock, rx_buffer, rx_buffer_len) < 0)
+                {
+                    recv_tries++;
+                    // wait for the next receive try
+                    vTaskDelay(1000 / portTICK_PERIOD_MS);
+                    continue;
+                }
+
+                // check if the message is valid
+                char recv_OK = rx_buffer[0];
+                if (recv_OK)
+                {
+                    ESP_LOGI(TCP_TAG, "valid T2 message received");
+                    recieved = true;
+                    break;
+                }
+                else
+                {
+                    ESP_LOGE(TCP_TAG, "invalid message received");
+                    recv_tries++;
+                    // wait for the nex receive try
+                    vTaskDelay(1000 / portTICK_PERIOD_MS);
+                    continue;
+                }
+            }
+            recv_tries = 0;
+
+            ESP_LOGI(TCP_TAG, "Extracting configuration from buffer:");
+            T2_CONFIG new_config = extractConfig(rx_buffer);
+            printConfig(new_config);
+
+            writeConfig(new_config);
+
+            ESP_LOGI(TCP_TAG, "config changed");
+
+            ESP_LOGI(TCP_TAG, "finished configuration, closing socket");
+            shutdown(sock, 0);
+            close(sock);
+            return 0;
         }
     }
 }

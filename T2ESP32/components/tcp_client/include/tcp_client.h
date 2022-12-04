@@ -11,4 +11,4 @@ int connectTcp(int sock, char *ip, int port);
 int sendTcp(int sock, char *message, int message_len);
 int recvTcp(int sock, char *rx_buffer, int rx_buffer_len);
 int manageTcp();
-
+int configurateTcpClient();
