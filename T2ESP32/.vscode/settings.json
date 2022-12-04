@@ -6,7 +6,9 @@
     "nvs.h": "c",
     "configuracion.h": "c",
     "empaquetamiento.h": "c",
-    "sensores.h": "c"
+    "sensores.h": "c",
+    "stdbool.h": "c",
+    "esp_sleep.h": "c"
   },
   "idf.adapterTargetName": "esp32"
 }
