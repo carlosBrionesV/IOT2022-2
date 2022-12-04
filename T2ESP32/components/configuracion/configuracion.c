@@ -100,6 +100,12 @@ void resetConfig() {
     writeConfig(config);
 }
 
+char *numToIp(uint32_t ip) {
+    static char ipStr[16];
+    sprintf(ipStr, "%ld.%ld.%ld.%ld", (ip >> 0) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
+    return ipStr;
+}
+
 // function to print the configuration
 void printConfig(T2_CONFIG config) {
     ESP_LOGI(CONFIG_TAG, "Printing configuration");

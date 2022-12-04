@@ -25,4 +25,5 @@ T2_CONFIG extractConfig(char *buffer);
 T2_CONFIG readConfig();
 int writeConfig(T2_CONFIG config);
 void resetConfig();
+char *numToIp(uint32_t ip);
 void printConfig(T2_CONFIG config);
