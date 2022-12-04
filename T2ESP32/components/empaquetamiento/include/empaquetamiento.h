@@ -1,7 +1,7 @@
 
 #define HEADER_SIZE 12
 // TODO: Definir el tamaño del protocolo 5
-#define DATA_SIZE {1, 6, 16, 20, 44, 24016}
+int DATA_SIZE[] = {1, 6, 16, 20, 44, 24016};
 
 int dataLen(int protocol);
 int messageLen(int protocol);

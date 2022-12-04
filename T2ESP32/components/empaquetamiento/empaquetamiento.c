@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
+
+#include "esp_system.h"
+#include "esp_mac.h"
+#include "esp_log.h"
 
 #include "empaquetamiento.h"
 #include "sensores.h"
@@ -148,9 +153,9 @@ char* dataprotocol3(uint8_t val) {
 	memcpy((void*) &(msg[12]), (void*) &co, 4);
 
 	float rms = acc_kpi_rms(
-        accel_kpi_amp_x(),
-        accel_kpi_amp_y(),
-        accel_kpi_amp_z()
+        acc_kpi_amp_x(),
+        acc_kpi_amp_y(),
+        acc_kpi_amp_z()
     );
 	memcpy((void*) &(msg[16]), (void*) &rms, 4);
 
@@ -199,8 +204,8 @@ char* dataprotocol4(uint8_t val) {
 	return msg;
 }
 
-char* dataprotocol4(uint8_t val) {
-	int l = dataLen(4);
+char *dataprotocol5(uint8_t val) {
+	int l = dataLen(5);
 	char* msg = malloc(l);
 
 	msg[0] = val;
@@ -220,17 +225,17 @@ char* dataprotocol4(uint8_t val) {
 	char hum = thpc_sensor_hum();
 	msg[10] = hum;
 
-	float co = thpc_sensor_co2();
+	float co = thpc_sensor_co();
 	memcpy((void*) &(msg[11]), (void*) &co, 4);
 
-	float *accx = acc_sensor_accx();
-	memcpy((void*) &(msg[15]), (void*) accx, 4*2000);
+	float *acc_x = acc_sensor_acc_x();
+	memcpy((void*) &(msg[15]), (void*) acc_x, 4*2000);
 
-	float *accy = acc_sensor_accy();
-	memcpy((void*) &(msg[8015]), (void*) accy, 4*2000);
+	float *acc_y = acc_sensor_acc_y();
+	memcpy((void*) &(msg[8015]), (void*) acc_y, 4*2000);
 
-	float *accz = acc_sensor_accz();
-	memcpy((void*) &(msg[16015]), (void*) accz, 4*2000);
+	float *acc_z = acc_sensor_acc_z();
+	memcpy((void*) &(msg[16015]), (void*) acc_z, 4*2000);
 
 	return msg;
 }

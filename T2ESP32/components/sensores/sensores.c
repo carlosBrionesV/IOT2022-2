@@ -87,7 +87,7 @@ float acc_kpi_amp_x() {
     return floatrand(0.0059, 0.12);
 }
 
-float acc_kpi_frec_x() {
+float acc_kpi_freq_x() {
     return floatrand(29, 31);
 }
 
@@ -95,7 +95,7 @@ float acc_kpi_amp_y() {
     return floatrand(0.0041, 0.11);
 }
 
-float acc_kpi_frec_y() {
+float acc_kpi_freq_y() {
     return floatrand(59, 61);
 }
 
@@ -103,7 +103,7 @@ float acc_kpi_amp_z() {
     return floatrand(0.008, 0.15);
 }
 
-float acc_kpi_frec_z() {
+float acc_kpi_freq_z() {
     return floatrand(89, 91);
 }
 
