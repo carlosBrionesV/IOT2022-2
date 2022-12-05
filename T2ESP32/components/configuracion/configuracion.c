@@ -64,7 +64,7 @@ int readConfigurated()
     char *strValue = (char *)NULL;
 
     readStorageValue(CONFIGURATED_KEY, &configurated, i32Value, strValue);
-    return configurated != 0;
+    return configurated;
 }
 
 T2_CONFIG readConfig()
