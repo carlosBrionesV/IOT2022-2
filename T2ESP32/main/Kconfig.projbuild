@@ -1,0 +1,10 @@
+menu "Device Configuration"
+
+    config ESP_DEVICE_NAME
+        string "Device Name"
+        default "ESP32_0"
+        help
+            The name of the device. This name will be used as the
+            hostname of the device in BLE.
+
+endmenu
