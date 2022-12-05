@@ -17,6 +17,8 @@
 #include "configuracion.h"
 #include "empaquetamiento.h"
 
+const char *UDP_TAG = "UDP client";
+
 /**
  * @brief creates udp socket
  *

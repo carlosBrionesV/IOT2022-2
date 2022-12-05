@@ -19,6 +19,8 @@
 #include "configuracion.h"
 #include "empaquetamiento.h"
 
+const char *TCP_TAG = "tcp client";
+
 /**
  * @brief creates tcp socket
  *
@@ -251,6 +253,7 @@ int manageTcp()
                 writeConfig(config);
 
                 ESP_LOGI(TCP_TAG, "config changed");
+                printConfig(config);
 
                 if (transportLayerChanged)
                 {
@@ -283,7 +286,7 @@ int manageTcp()
     }
 }
 
-int configurateTcpClient()
+int configurateTcp()
 {
     T2_CONFIG config = readConfig();
 
@@ -291,9 +294,15 @@ int configurateTcpClient()
     int rx_buffer_len = sizeof(rx_buffer);
     char *host_ip = numToIp(config.HOST_IP_ADDR);
 
-    if (!checkTcp(config))
+    if (config.STATUS != 20)
     {
         ESP_LOGI(TCP_TAG, "Status %d not allowed", config.STATUS);
+        return -1;
+    }
+
+    if (config.ID_PROTOCOL != 0)
+    {
+        ESP_LOGI(TCP_TAG, "Protocol %d not allowed", config.ID_PROTOCOL);
         return -1;
     }
 
@@ -383,11 +392,11 @@ int configurateTcpClient()
 
             ESP_LOGI(TCP_TAG, "Extracting configuration from buffer:");
             T2_CONFIG new_config = extractConfig(rx_buffer);
-            printConfig(new_config);
 
             writeConfig(new_config);
 
             ESP_LOGI(TCP_TAG, "config changed");
+            printConfig(new_config);
 
             ESP_LOGI(TCP_TAG, "finished configuration, closing socket");
             shutdown(sock, 0);

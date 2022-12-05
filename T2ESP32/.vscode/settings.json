@@ -10,7 +10,9 @@
     "stdbool.h": "c",
     "esp_sleep.h": "c",
     "ble_server.h": "c",
-    "esp_bt.h": "c"
+    "esp_bt.h": "c",
+    "udp_client.h": "c",
+    "freertos.h": "c"
   },
   "idf.adapterTargetName": "esp32"
 }
