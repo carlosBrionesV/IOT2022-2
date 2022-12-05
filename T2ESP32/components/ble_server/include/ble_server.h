@@ -16,22 +16,6 @@
 #include "esp_gatt_common_api.h"
 
 /* Attributes State Machine */
-// enum
-// {
-//     IDX_SVC,                // index of service
-
-//     // -- service characteristics
-//     IDX_CHAR_MSG,            // index characteristic MSG
-//     IDX_CHAR_VAL_MSG,        // index characteristic value MSG
-
-//     IDX_CHAR_CURRENT,
-//     IDX_CHAR_VAL_CURRENT,
-//     // --
-//     // number of table elements
-//     IDX_NB,
-// };
-
-/* Attributes State Machine */
 enum
 {
     IDX_SVC,                // index of service
@@ -67,7 +51,6 @@ enum
 *  the data length must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
 */
 #define GATTS_CHAR_VAL_LEN_MAX      500
-#define GATTS_DEMO_CHAR_VAL_LEN_MAX      500
 #define PREPARE_BUF_MAX_SIZE        1024
 #define CHAR_DECLARATION_SIZE       (sizeof(uint8_t))
 
@@ -95,6 +78,8 @@ struct gatts_profile_inst {
 };
 
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
+void example_prepare_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param);
+void example_exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param);
 void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 int initBleServer();
