@@ -15,7 +15,7 @@
 
 #include "udp_client.h"
 #include "configuracion.h"
-#include "empaquetamiento.h"
+// #include "empaquetamiento.h"
 
 const char *UDP_TAG = "UDP client";
 
@@ -163,10 +163,12 @@ int manageUdp()
         while (send_tries < UDP_MAX_SEND_TRIES)
         {
             ESP_LOGI(UDP_TAG, "Sending message to %s:%ld", host_ip, config.PORT_UDP);
-            char *msg = mensaje(config.ID_PROTOCOL, config.STATUS, 1);
-
-            int err = sendUdp(sock, host_ip, config.PORT_UDP, msg, messageLen(config.ID_PROTOCOL));
+            char *msg = createMsg(config.ID_PROTOCOL, config.STATUS, 1);
+            // char *msg = "hola";
+            // TODO: cambiar el mensaje por el empaquetamiento
+            int err = sendUdp(sock, host_ip, config.PORT_UDP, msg, strlen(msg));
             free(msg);
+            // int err = sendUdp(sock, host_ip, config.PORT_UDP, msg, 4);
 
             if (err < 0)
             {

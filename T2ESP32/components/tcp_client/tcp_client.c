@@ -16,8 +16,8 @@
 #include "lwip/sockets.h"
 
 #include "tcp_client.h"
+// #include "empaquetamiento.h"
 #include "configuracion.h"
-#include "empaquetamiento.h"
 
 const char *TCP_TAG = "tcp client";
 
@@ -189,10 +189,12 @@ int manageTcp()
         while (send_tries < TCP_MAX_SEND_TRIES)
         {
             ESP_LOGI(TCP_TAG, "Sending message to %s:%ld", host_ip, config.PORT_TCP);
-            char *msg = mensaje(config.ID_PROTOCOL, config.STATUS, 1);
-
-            int err = sendTcp(sock, msg, messageLen(config.ID_PROTOCOL));
+            char *msg = createMsg(config.ID_PROTOCOL, config.STATUS, 1);
+            // char *msg = "hola";
+            // TODO: cambiar por empaquetamiento
+            int err = sendTcp(sock, msg, strlen(msg));
             free(msg);
+            // int err = sendTcp(sock, msg, 4);
 
             if (err < 0)
             {
@@ -345,10 +347,12 @@ int configurateTcp()
         while (!recieved && send_tries < TCP_MAX_SEND_TRIES)
         {
             ESP_LOGI(TCP_TAG, "Sending message to %s:%ld", host_ip, config.PORT_TCP);
-            char *msg = mensaje(0, 20, 0);
-
-            int err = sendTcp(sock, msg, messageLen(0));
+            char *msg = createMsg(0, 20, 0);
+            // char *msg = "hola";
+            // TODO: cambiar por empaquetamiento
+            int err = sendTcp(sock, msg, strlen(msg));
             free(msg);
+            // int err = sendTcp(sock, msg, 4);
 
             if (err < 0)
             {
