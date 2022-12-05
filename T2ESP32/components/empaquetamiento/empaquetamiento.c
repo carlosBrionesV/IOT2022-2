@@ -12,13 +12,6 @@
 // TODO: Definir el tamaño del protocolo 5
 int DATA_SIZE[] = {1, 6, 16, 20, 44, 24016};
 
-char *dataProtocol0(uint8_t val);
-char *dataProtocol1(uint8_t val);
-char *dataProtocol2(uint8_t val);
-char *dataProtocol3(uint8_t val);
-char *dataProtocol4(uint8_t val);
-char *dataProtocol5(uint8_t val);
-
 int dataLen(int protocol)
 {
 	return DATA_SIZE[protocol];
